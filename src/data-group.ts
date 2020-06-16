@@ -1,5 +1,13 @@
-const DATA_WATCH_ATTRIBUTE = 'data-watch';
-type Renderer = { render: (data: any) => void };
+const DATA_WATCH_ATTRIBUTE = 'watch';
+const DATA_KEY_ATTRIBUTE = 'data-key';
+const DATA_ACTION_ATTRIBUTE = 'action';
+const STATE_PROPERTY = '@state';
+
+type Renderer = { render: (data: any) => void, dataNode: Array<Node>, onAction: (callback: ActionCallback) => void };
+type Action = { type: string, data: any, key: string, event: Event };
+type Reducer<Type> = (data: Type, action: Action) => Type
+type ActionCallback = (type: Map<string, string>, event: Event) => void;
+type SetDataProvider = (oldDataProvider: Array<any>) => Array<any>;
 
 function removeEmptyTextNode() {
     return (node: ChildNode) => {
@@ -10,77 +18,140 @@ function removeEmptyTextNode() {
     };
 }
 
-
 function printDataOnNode(node: ChildNode, data: any) {
+    // first we convert into HTMLElement
     const element = node as HTMLElement;
-    const dataToWatch = element.getAttribute(DATA_WATCH_ATTRIBUTE);
-    if (element instanceof HTMLDivElement) {
-        element.innerText = data[dataToWatch];
-    }
+    // we check if data contains @state property
+    const state = data[STATE_PROPERTY] || '';
+    // we filter element attribute names
+    const attributesToWatch = element.getAttributeNames().filter(name => {
+        // if data has state, then we check if the attribute name has state.watch property
+        if (state) {
+            return name.indexOf(`${state}.${DATA_WATCH_ATTRIBUTE}`) > 0;
+        }
+        // if data does not have state, the we check the watch property, and it should be less than 2 values
+        return name.indexOf(DATA_WATCH_ATTRIBUTE) >= 0 && name.split('.').length <= 2;
+    });
+
+    attributesToWatch.forEach(attributeName => {
+        // now we have attributes to watch, lets split the attribute
+        let [attributeNameToBind] = attributeName.split('.');
+        // now we have attribute to bind
+        let attributeValueToBind = element.getAttribute(attributeName);
+        // now we have the attribute of the data to bind
+        const value = data[attributeValueToBind];
+        // maybe we want to make conversion dataToString callback here
+        if (attributeNameToBind === DATA_WATCH_ATTRIBUTE) {
+            // if the attributeNameToBind does not contains and prefix attribute then we just bleed them inside the innerHtml
+            element.innerHTML = value;
+        } else {
+            // if the attribute is available then we set the value of the attribute
+            element.setAttribute(attributeNameToBind, value);
+        }
+    });
+
 }
 
-function createRenderer(dataNode: Array<Node>) {
-    const findNodesThatHaveAttribute = (attribute: string, childNodes: Array<Node>) => {
+function createItemRenderer(dataNode: Array<Node>): Renderer {
+    const findNodesThatHaveAttributes = (attributesSuffix: Array<string>, childNodes: Array<Node>) => {
         return Array.from(childNodes).filter(removeEmptyTextNode()).reduce((accumulator, childNode) => {
             let childrenNodes: ChildNode[] = [];
             if (childNode instanceof HTMLElement) {
-                if ((childNode as HTMLElement).getAttribute(attribute)) {
-                    accumulator.push(childNode);
+                const attributeNames = (childNode as HTMLElement).getAttributeNames();
+                for (const attribute of attributeNames) {
+                    for (const attributeSuffix of attributesSuffix) {
+                        if (attribute.split('.').indexOf(attributeSuffix) >= 0) {
+                            accumulator.push(childNode);
+                            break;
+                        }
+                    }
                 }
                 if (!(childNode instanceof DataGroup)) {
-                    childrenNodes = findNodesThatHaveAttribute(attribute, Array.from(childNode.childNodes));
+                    childrenNodes = findNodesThatHaveAttributes(attributesSuffix, Array.from(childNode.childNodes));
                 }
             }
             return [...accumulator, ...childrenNodes];
         }, Array<ChildNode>());
     };
-    const nodesThatWatchingData = findNodesThatHaveAttribute(DATA_WATCH_ATTRIBUTE, dataNode);
+    const nodesThatWatchingData = findNodesThatHaveAttributes([DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE], dataNode);
+
     return {
         render: (data: any) => {
             nodesThatWatchingData.forEach(node => {
                 printDataOnNode(node, data);
             })
-        }
+        },
+        onAction: (callback: ActionCallback) => {
+
+            nodesThatWatchingData.forEach(node => {
+                // first we get the element
+                const element = node as HTMLElement;
+                // then we get the attributes to watch (event/action)
+                const actionAttributes = element.getAttributeNames().filter(name => {
+
+                    return name.indexOf(DATA_ACTION_ATTRIBUTE) > 0 && name.split('.').length > 1;
+                });
+
+                // then we convert into map, click.action="iDontKnow" click.disabled.action="cool"
+                const stateTypeMap = actionAttributes.reduce((accumulator: Map<string, Map<string, string>>, attribute) => {
+                    // first we takeout name of the event, and the state
+                    let [eventName, state] = attribute.split('.');
+                    // then we take out the value of the attribute
+                    let actionType = element.getAttribute(attribute);
+                    // next we store the event name and the state and action type
+                    if (!accumulator.has(eventName)) {
+                        accumulator.set(eventName, new Map<string, string>());
+                    }
+                    accumulator.get(eventName).set(state, actionType);
+                    return accumulator;
+                }, new Map<string, Map<string, string>>());
+
+                stateTypeMap.forEach((stateActionType, eventName) => {
+                    element.addEventListener(eventName, function eventListenerWrapper(event) {
+                        callback(stateActionType, event);
+                    });
+                });
+
+            });
+        },
+        dataNode
     };
 }
 
-class DataGroup extends HTMLElement {
 
-    private _template: Array<Node>;
-    private _dataKeyField: string;
-    private _renderers: Map<string, Renderer>;
+class DataGroup extends HTMLElement {
+    private template: Array<Node>;
+    private dataKeyField: string;
+    private renderers: Map<string, Renderer>;
+    private dataProvider: Array<any>;
+
+    public reducer: Reducer<any>;
+    public dataKeySelector: (data: any) => string;
 
     constructor() {
         super();
-        this._template = null;
-        this._renderers = new Map<string, Renderer>();
-        this._dataKeySelector = (data: any) => data[this._dataKeyField];
+        this.template = null;
+        this.renderers = new Map<string, Renderer>();
+        this.dataKeySelector = (data: any) => data[this.dataKeyField];
+        this.reducer = (data) => data;
     }
 
-    private _dataProvider: Array<any>;
+    setDataProvider(dataProvider: Array<any> | SetDataProvider) {
 
-    get dataProvider(): Array<any> {
-        return this._dataProvider;
-    }
-
-    set dataProvider(value: Array<any>) {
-        this._dataProvider = value;
+        if (Array.isArray(dataProvider)) {
+            this.dataProvider = dataProvider;
+        } else {
+            this.dataProvider = dataProvider(this.dataProvider);
+        }
         this.render();
     }
 
-    private _dataKeySelector: (data: any) => string;
-
-    set dataKeySelector(value: (data: any) => string) {
-        this._dataKeySelector = value;
-    }
-
     connectedCallback() {
-        this._dataKeyField = this.getAttribute('data-key') || 'id';
-        if (this._template === null) {
-            // first we hide it before we render it to screen
+        this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE) || 'id';
+        if (this.template === null) {
             this.setAttribute('style', 'display:none');
             setTimeout(() => {
-                this._template = Array.from(this.childNodes).filter(removeEmptyTextNode());
+                this.template = Array.from(this.childNodes).filter(removeEmptyTextNode());
                 this.innerHTML = ''; // we cleanup the innerHTML
                 this.removeAttribute('style');
                 this.render();
@@ -89,32 +160,45 @@ class DataGroup extends HTMLElement {
     }
 
     private render() {
-        if (this._dataProvider && this._template) {
-            this._dataProvider.forEach((data) => {
-                const dataKey = this._dataKeySelector(data);
-                if (!this.cacheHasRenderer(dataKey)) {
-                    // watch out cloneNode(deep) might not work in IE !! maybe we need to create polyfill of this
-                    const dataNode = this._template.map(node => node.cloneNode(true));
-                    const renderer = createRenderer(dataNode);
-                    this.append(...dataNode);
-                    this.cacheRenderer(dataKey, renderer);
+        if (this.dataProvider && this.template) {
+            const newKeys = this.dataProvider.map(data => this.dataKeySelector(data));
+            const oldKeys = Array.from(this.renderers.keys());
+            const removedKeys = oldKeys.filter(key => newKeys.indexOf(key) < 0);
+            removedKeys.forEach(key => {
+                this.renderers.get(key).dataNode.forEach(node => (node as ChildNode).remove());
+                this.renderers.delete(key);
+            });
+            this.dataProvider.forEach((data) => {
+                const dataKey = this.dataKeySelector(data);
+                if (!this.renderers.has(dataKey)) {
+                    const dataNode = this.template.map(node => node.cloneNode(true));
+                    const itemRenderer = createItemRenderer(dataNode);
+                    // if we have action then we need to rerender this guy
+                    const onActionCallback = (stateActionTypeMapping: Map<string, string>, event: Event) => {
+                        const setDataProviderCallback = (oldDataProvider: Array<any>) => {
+                            let action = {data, key: dataKey, event: event, type: ''};
+                            action.type = stateActionTypeMapping.get(DATA_ACTION_ATTRIBUTE) || '';
+                            action.type = stateActionTypeMapping.get(data[STATE_PROPERTY]) || action.type;
+                            if (action.type) {
+                                return this.reducer(oldDataProvider, action);
+                            }
+                        };
+                        this.setDataProvider(setDataProviderCallback);
+                    };
+                    itemRenderer.onAction(onActionCallback);
+                    this.renderers.set(dataKey, itemRenderer);
                 }
-                this.getRenderer(dataKey).render(data);
+                const itemRenderer = this.renderers.get(dataKey);
+                if (this.contains(itemRenderer.dataNode[0])) {
+                    // ok its already mounted lets ignore it
+                    debugger;
+                } else {
+                    debugger;
+                    this.append(...itemRenderer.dataNode);
+                }
+                this.renderers.get(dataKey).render(data);
             })
         }
-
-    }
-
-    private cacheRenderer(dataKey: string, renderer: Renderer) {
-        this._renderers.set(dataKey, renderer);
-    }
-
-    private cacheHasRenderer(dataKey: string): boolean {
-        return this._renderers.has(dataKey);
-    }
-
-    private getRenderer(dataKey: string): Renderer {
-        return this._renderers.get(dataKey);
     }
 }
 

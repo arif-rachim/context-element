@@ -9,6 +9,10 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "cssnano": "^4.1.10",
     "typescript": "^3.9.5"
+  },
+  "dependencies": {
+    "@webcomponents/webcomponentsjs": "^2.4.3"
   }
 }
