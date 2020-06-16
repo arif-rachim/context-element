@@ -12,7 +12,7 @@ type SetDataProvider = (oldDataProvider: Array<any>) => Array<any>;
 /**
  * Function to remove empty text node.
  */
-function noEmptyTextNode() {
+function noEmptyTextNode(): (node: ChildNode) => (boolean | true) {
     return (node: ChildNode) => {
         if (node.nodeType === Node.TEXT_NODE) {
             return /\S/.test(node.textContent);
@@ -21,7 +21,7 @@ function noEmptyTextNode() {
     };
 }
 
-function printDataOnNode(node: ChildNode, data: any) {
+function printDataOnNode(node: ChildNode, data: any): void {
     // first we convert into HTMLElement
     const element = node as HTMLElement;
     // we check if data contains @state property
@@ -145,7 +145,7 @@ class DataGroup extends HTMLElement {
         this.reducer = (data) => data;
     }
 
-    setDataProvider(dataProvider: Array<any> | SetDataProvider) {
+    setDataProvider(dataProvider: Array<any> | SetDataProvider): void {
         if (Array.isArray(dataProvider)) {
             this.dataProvider = dataProvider;
         } else {
@@ -167,7 +167,7 @@ class DataGroup extends HTMLElement {
         }
     }
 
-    private render() {
+    private render(): void {
         if (this.dataProvider === null || this.template === null) {
             return;
         }
@@ -181,7 +181,7 @@ class DataGroup extends HTMLElement {
 
         let lastNode: Node = document.createElement('template');
         this.append(lastNode);
-        [...this.dataProvider].reverse().forEach((data, index) => {
+        [...this.dataProvider].reverse().forEach((data) => {
             const dataKey = this.dataKeySelector(data);
             if (!this.renderers.has(dataKey)) {
                 const dataNode = this.template.map(node => node.cloneNode(true));
