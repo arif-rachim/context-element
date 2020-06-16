@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="src/data-group.ts"></script>
+</head>
+<body>
+<button onclick="addData()">Add Data</button>
+<data-group data-key="name" id="data-group">
+    <div style="display:flex"> Name :
+        <div data-watch="name">Name</div>
+    </div>
+    <div style="display:flex">Age :
+        <div data-watch="age">Age</div>
+    </div>
+    <data-group class="babi-gila" data-key="name">
+        <div style="display: flex"> Location :
+            <div data-watch="location">Tidak Muncul Babi</div>
+        </div>
+    </data-group>
+    <div style="display:flex">Address :
+        <div data-watch="location">Address</div>
+    </div>
+    <div style="border-bottom: 1px solid rgba(0,0,0,0.3);margin-top: 10px;margin-bottom: 10px"></div>
+    <button click.trigger="delete">Delete</button>
+</data-group>
+</body>
+<script>
+    const address = ['Jakarta', 'Dubai', 'Abu Dhabi', 'Al Ain', 'Dhafra', 'Sharjah', 'Ajman'];
+    let dataGroup = document.getElementById('data-group');
+    dataGroup.dataProvider = ([
+        {
+            name: 'Arif',
+            age: Math.round(Math.random() * 100),
+            location: address[Math.round((Math.random() * address.length))]
+        },
+        {
+            name: 'Jonny',
+            age: Math.round(Math.random() * 100),
+            location: address[Math.round((Math.random() * address.length))]
+        }]);
+
+    function addData() {
+        dataGroup.dataProvider = [...dataGroup.dataProvider, {
+            name: (Math.random() * 1000).toString(),
+            age: Math.round(Math.random() * 100),
+            location: address[Math.round((Math.random() * address.length))]
+        }];
+    }
+
+</script>
+</html>
