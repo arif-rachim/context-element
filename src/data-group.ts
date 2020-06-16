@@ -1,7 +1,9 @@
 const DATA_WATCH_ATTRIBUTE = 'watch';
 const DATA_KEY_ATTRIBUTE = 'data-key';
 const DATA_ACTION_ATTRIBUTE = 'action';
+const DATA_TOGGLE_ATTRIBUTE = 'toggle';
 const STATE_PROPERTY = '@state';
+const STATE_GLOBAL = '*';
 
 type Renderer = { render: (data: any) => void, dataNode: Array<Node>, onAction: (callback: ActionCallback) => void };
 type Action = { type: string, data: any, key: string, event: Event };
@@ -21,41 +23,97 @@ function noEmptyTextNode(): (node: ChildNode) => (boolean | true) {
     };
 }
 
-function printDataOnNode(node: ChildNode, data: any): void {
-    // first we convert into HTMLElement
-    const element = node as HTMLElement;
-    // we check if data contains @state property
-    const state = data[STATE_PROPERTY] || '';
-    // we filter element attribute names
-    const attributesToWatch = element.getAttributeNames().filter(name => {
-        // if data has state, then we check if the attribute name has state.watch property
-        if (state) {
-            return name.indexOf(`${state}.${DATA_WATCH_ATTRIBUTE}`) > 0;
-        }
-        // if data does not have state, the we check the watch property, and it should be less than 2 values
-        return name.indexOf(DATA_WATCH_ATTRIBUTE) >= 0 && name.split('.').length <= 2;
-    });
-
-    attributesToWatch.forEach(attributeName => {
-        // now we have attributes to watch, lets split the attribute
-        let [attributeNameToBind] = attributeName.split('.');
-        // now we have attribute to bind
-        let attributeValueToBind = element.getAttribute(attributeName);
-        // now we have the attribute of the data to bind
-        const value = data[attributeValueToBind];
-        // maybe we want to make conversion dataToString callback here
-        if (attributeNameToBind === DATA_WATCH_ATTRIBUTE) {
-            // if the attributeNameToBind does not contains and prefix attribute then we just bleed them inside the innerHtml
-            element.innerHTML = value;
-        } else {
-            // if the attribute is available then we set the value of the attribute
-            element.setAttribute(attributeNameToBind, value);
-            if (attributeNameToBind === 'value' && 'value' in element) {
-                (element as HTMLInputElement).value = value;
+function printDataOnNode(element: HTMLElement,dictionary:Map<string,Map<string,Map<string,string>>>, data: any): void {
+    const dataState = data[STATE_PROPERTY] || '';
+    dictionary.forEach((stateDictionary:Map<string,Map<string,string>>,type:string) => {
+        if(type === DATA_WATCH_ATTRIBUTE){
+            if(stateDictionary.has(dataState) || (stateDictionary.has(STATE_GLOBAL))){
+                const attributeMapping:Map<string,string> = stateDictionary.has(dataState) ? stateDictionary.get(dataState) : stateDictionary.get(STATE_GLOBAL);
+                attributeMapping.forEach((bindingAttribute:string,attributeName:string) => {
+                    const val = data[bindingAttribute];
+                    element.setAttribute(attributeName,val);
+                    if(attributeName in element){
+                        (element as any)[attributeName] = val;
+                    }
+                    if(attributeName === 'content'){
+                        element.innerHTML = val;
+                    }
+                });
             }
         }
-    });
+        if(type === DATA_TOGGLE_ATTRIBUTE){
 
+        }
+    });
+}
+
+function toDictionaries(element: HTMLElement): Map<string, Map<string, Map<string, string>>> {
+    const attributesToWatch = element.getAttributeNames().filter(name => {
+        return (name.indexOf(DATA_WATCH_ATTRIBUTE) >= 0) || (name.indexOf(DATA_TOGGLE_ATTRIBUTE) >= 0) || (name.indexOf(DATA_ACTION_ATTRIBUTE))
+    });
+    return attributesToWatch.reduce((acc:Map<string,Map<string,Map<string,string>>>,attributeKey:string) => {
+        let attribute = '',state = STATE_GLOBAL,type = '';
+        let keys = attributeKey.split('.');
+        if(keys.length === 3){
+            attribute = keys[0];
+            state = keys[1];
+            type = keys[2];
+        }else if (keys.length === 2){
+            attribute = keys[0];
+            type = keys[1];
+        }else if(keys.length === 1){
+            type = keys[0];
+            if(type === DATA_WATCH_ATTRIBUTE){
+                attribute = 'content';
+            }
+            if(type === DATA_ACTION_ATTRIBUTE){
+                attribute = 'click';
+            }
+            if(type === DATA_TOGGLE_ATTRIBUTE){
+                attribute = 'class';
+            }
+        }
+        const value = element.getAttribute(attributeKey);
+        if(!acc.has(type)){
+            acc.set(type,new Map<string, Map<string,string>>());
+        }
+        if(!acc.get(type).has(state)){
+            acc.get(type).set(state,new Map<string,string>())
+        }
+        acc.get(type).get(state).set(attribute,value);
+        return acc;
+
+    },new Map<string,Map<string,Map<string,string>>>());
+
+}
+
+function listenEventOnNode(element: HTMLElement, dictionary: Map<string, Map<string, Map<string, string>>>, callback: (type: Map<string, string>, event: Event) => void) {
+
+    dictionary.forEach((stateDictionary: Map<string, Map<string, string>>, type: string) => {
+        if (type === DATA_ACTION_ATTRIBUTE) {
+            const eventDictionary: Map<string, Map<string, string>> = new Map<string, Map<string, string>>();
+            stateDictionary.forEach((eventActionType, state) => {
+                eventActionType.forEach((actionType, eventName) => {
+                    if (!eventDictionary.has(eventName)) {
+                        eventDictionary.set(eventName, new Map<string, string>());
+                    }
+                    eventDictionary.get(eventName).set(state, actionType);
+                });
+            });
+
+            const eventListenerRemover = (element as any).eventListenerRemover || [];
+            eventListenerRemover.forEach((unregisterListeners:any) => unregisterListeners());
+            (element as any).eventListenerRemover = [];
+
+            eventDictionary.forEach((stateAction, eventName) => {
+                const eventListenerWrapper = (event:Event) => {
+                    callback(stateAction, event);
+                };
+                element.addEventListener(eventName, eventListenerWrapper);
+                (element as any).eventListenerRemover.push(()=> element.removeEventListener(eventName,eventListenerWrapper));
+            });
+        }
+    });
 }
 
 /**
@@ -85,44 +143,14 @@ function createItemRenderer(dataNode: Array<Node>): Renderer {
             return [...accumulator, ...childrenNodes];
         }, Array<ChildNode>());
     };
-    const nodesThatWatchingData = findNodesThatHaveAttributes([DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE], dataNode);
-
+    const activeNodes = findNodesThatHaveAttributes([DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE,DATA_TOGGLE_ATTRIBUTE], dataNode);
+    const nodesDictionary = Array.from(activeNodes).map(node => ({dictionary:toDictionaries(node as HTMLElement),node}));
     return {
         render: (data: any) => {
-            nodesThatWatchingData.forEach(node => {
-                printDataOnNode(node, data);
-            })
+            nodesDictionary.forEach(({dictionary,node}) => printDataOnNode(node as HTMLElement,dictionary, data));
         },
         onAction: (callback: ActionCallback) => {
-            nodesThatWatchingData.forEach(node => {
-                // first we get the element
-                const element = node as HTMLElement;
-                // then we get the attributes to watch (event/action)
-                const actionAttributes = element.getAttributeNames().filter(name => {
-                    return name.indexOf(DATA_ACTION_ATTRIBUTE) > 0 && name.split('.').length > 1;
-                });
-
-                // then we convert into map, click.action="iDontKnow" click.disabled.action="cool"
-                const stateTypeMap = actionAttributes.reduce((accumulator: Map<string, Map<string, string>>, attribute) => {
-                    // first we takeout name of the event, and the state
-                    let [eventName, state] = attribute.split('.');
-                    // then we take out the value of the attribute
-                    let actionType = element.getAttribute(attribute);
-                    // next we store the event name and the state and action type
-                    if (!accumulator.has(eventName)) {
-                        accumulator.set(eventName, new Map<string, string>());
-                    }
-                    accumulator.get(eventName).set(state, actionType);
-                    return accumulator;
-                }, new Map<string, Map<string, string>>());
-
-                stateTypeMap.forEach((stateActionType, eventName) => {
-                    element.addEventListener(eventName, function eventListenerWrapper(event) {
-                        callback(stateActionType, event);
-                    });
-                });
-
-            });
+            nodesDictionary.forEach(({dictionary,node}) => listenEventOnNode(node as HTMLElement, dictionary, callback));
         },
         dataNode
     };
@@ -190,7 +218,7 @@ class DataGroup extends HTMLElement {
                 const onActionCallback = (stateActionTypeMapping: Map<string, string>, event: Event) => {
                     const setDataProviderCallback = (oldDataProvider: Array<any>) => {
                         let action = {data, key: dataKey, event: event, type: ''};
-                        action.type = stateActionTypeMapping.get(DATA_ACTION_ATTRIBUTE) || '';
+                        action.type = stateActionTypeMapping.get(STATE_GLOBAL) || '';
                         action.type = stateActionTypeMapping.get(data[STATE_PROPERTY]) || action.type;
                         if (action.type) {
                             return this.reducer(oldDataProvider, action);

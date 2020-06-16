@@ -10,9 +10,14 @@
 <data-group data-key="id" id="data-group">
     <div style="display:flex"> Name :
         <div watch="name" >Name</div>
+        xx
+        <span watch="name">Name</span>
         <input type="text"
                value.watch="name"
                input.action="setName"
+               class="default"
+               class.toggle="something"
+               class.enable.toggle="my-data"
                input.enabled.action="setLocation"
                input.disabled.action="setAge"
                value.enabled.watch="location"
@@ -68,7 +73,7 @@
     }
 
     dataGroup.reducer = (dataProvider,{type,data,event,key}) => {
-        debugger;
+
         switch (type) {
             case 'delete' : {
                 const newDataProvider = [...dataProvider.filter((data) => data.id !== key)];
