@@ -3,15 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <script src="src/data-group.ts"></script>
+    <script src="src/index.ts"></script>
 </head>
 <body>
-<context-provider>
-    <input type="text" value.watch="name" input.action="setName"/>
-    <div watch="name"></div>
+<context-provider id="context-provider">
+    <input input.action="setTodo" name="todo" type="text">
+    <div watch="todo"></div>
 </context-provider>
+
+<button onclick="addData()">Add Data</button>
+<data-group data-key="id" id="data-group">
+    <div style="display:flex"> Name :
+        <div watch="name">Name</div>
+        xx
+        <span watch="name">Name</span>
+        <input class="default"
+               class.enable.toggle="my-data"
+               class.toggle="something"
+               input.action="setName"
+               input.disabled.action="setAge"
+               input.enabled.action="setLocation"
+               type="text"
+               value.disabled.watch="age"
+               value.enabled.watch="location"
+               value.watch="name"
+        >
+    </div>
+    <div style="display:flex">Age :
+        <div watch="age">Age</div>
+    </div>
+
+    <div style="display:flex">Address :
+        <div watch="location">Address</div>
+    </div>
+    <div style="display: flex">
+        <button click.action="delete">
+            Delete
+            <span watch="name"></span>
+        </button>
+        <button click.action="disabled">Disable</button>
+        <button click.action="enabled">Enabled</button>
+    </div>
+    <div style="border-bottom: 1px solid rgba(0,0,0,0.3);margin-top: 10px;margin-bottom: 10px"></div>
+</data-group>
 </body>
 <script>
+    const address = ['Jakarta', 'Dubai', 'Abu Dhabi', 'Al Ain', 'Dhafra', 'Sharjah', 'Ajman'];
+    let dataGroup = document.getElementById('data-group');
 
+    dataGroup.setDataProvider([
+        {
+            id: Math.random() * 1000,
+            name: 'Arif',
+            age: Math.round(Math.random() * 100),
+            location: address[Math.round((Math.random() * address.length))]
+        },
+        {
+            id: Math.random() * 1000,
+            name: 'Jonny',
+            age: Math.round(Math.random() * 100),
+            location: address[Math.round((Math.random() * address.length))]
+        }]);
+
+    function addData() {
+        dataGroup.setDataProvider((oldDataProvider) => {
+            return [...oldDataProvider, {
+                id: Math.random() * 1000,
+                name: (Math.random() * 1000).toString(),
+                age: Math.round(Math.random() * 100),
+                location: address[Math.round((Math.random() * address.length))]
+            }];
+        });
+    }
+
+    dataGroup.reducer = (dataProvider, {type, data, event, key}) => {
+
+        switch (type) {
+            case 'delete' : {
+                const newDataProvider = [...dataProvider.filter((data) => data.id !== key)];
+                return newDataProvider;
+            }
+            case 'setName' : {
+                data.name = event.target.value;
+                return [...dataProvider];
+            }
+            case 'setLocation' : {
+                data.location = event.target.value;
+                return [...dataProvider];
+            }
+            case 'setAge' : {
+                data.age = event.target.value;
+                return [...dataProvider];
+            }
+            case 'disabled' : {
+                data['@state'] = 'disabled';
+                return [...dataProvider];
+            }
+            case 'enabled' : {
+                data['@state'] = 'enabled';
+                return [...dataProvider];
+            }
+            default : {
+                return [...dataProvider];
+            }
+        }
+
+    };
+
+    const contextProvider = document.getElementById('context-provider');
+    contextProvider.setContext({todo: 'shit'});
+    contextProvider.reducer = (context, action) => {
+        debugger;
+        switch (action.type) {
+            case 'setTodo' : {
+                const value = action.event.target.value;
+                return {...context, todo: value}
+            }
+        }
+        return {...context};
+    }
 </script>
 </html>
