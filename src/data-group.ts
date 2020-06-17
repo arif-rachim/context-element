@@ -10,7 +10,8 @@ type Action = { type: string, data: any, key: string, event: Event };
 type Reducer<Type> = (data: Type, action: Action) => Type
 type ActionCallback = (type: Map<string, string>, event: Event) => void;
 type SetDataProvider = (oldDataProvider: Array<any>) => Array<any>;
-
+type DoubleMap<Type> = Map<Type,Map<Type,Type>>;
+type TripleMap<Type> = Map<Type,DoubleMap<Type>>;
 /**
  * Function to remove empty text node.
  */
@@ -23,9 +24,9 @@ function noEmptyTextNode(): (node: ChildNode) => (boolean | true) {
     };
 }
 
-function printDataOnNode(element: HTMLElement,dictionary:Map<string,Map<string,Map<string,string>>>, data: any): void {
+function printDataOnNode(element: HTMLElement,dictionary:TripleMap<string>, data: any): void {
     const dataState = data[STATE_PROPERTY] || '';
-    dictionary.forEach((stateDictionary:Map<string,Map<string,string>>,type:string) => {
+    dictionary.forEach((stateDictionary:DoubleMap<string>,type:string) => {
         if(type === DATA_WATCH_ATTRIBUTE){
             if(stateDictionary.has(dataState) || (stateDictionary.has(STATE_GLOBAL))){
                 const attributeMapping:Map<string,string> = stateDictionary.has(dataState) ? stateDictionary.get(dataState) : stateDictionary.get(STATE_GLOBAL);
@@ -48,10 +49,12 @@ function printDataOnNode(element: HTMLElement,dictionary:Map<string,Map<string,M
 }
 
 function toDictionaries(element: HTMLElement): Map<string, Map<string, Map<string, string>>> {
+
     const attributesToWatch = element.getAttributeNames().filter(name => {
         return (name.indexOf(DATA_WATCH_ATTRIBUTE) >= 0) || (name.indexOf(DATA_TOGGLE_ATTRIBUTE) >= 0) || (name.indexOf(DATA_ACTION_ATTRIBUTE))
     });
-    return attributesToWatch.reduce((acc:Map<string,Map<string,Map<string,string>>>,attributeKey:string) => {
+
+    return attributesToWatch.reduce((acc:TripleMap<string>,attributeKey:string) => {
         let attribute = '',state = STATE_GLOBAL,type = '';
         let keys = attributeKey.split('.');
         if(keys.length === 3){
@@ -156,8 +159,7 @@ function createItemRenderer(dataNode: Array<Node>): Renderer {
     };
 }
 
-
-class DataGroup extends HTMLElement {
+export class DataGroup extends HTMLElement {
     public reducer: Reducer<any>;
     public dataKeySelector: (data: any) => string;
     private template: Array<Node>;
@@ -168,6 +170,7 @@ class DataGroup extends HTMLElement {
     constructor() {
         super();
         this.template = null;
+        this.dataProvider = null;
         this.renderers = new Map<string, Renderer>();
         this.dataKeySelector = (data: any) => data[this.dataKeyField];
         this.reducer = (data) => data;
@@ -184,16 +187,21 @@ class DataGroup extends HTMLElement {
 
     connectedCallback() {
         this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE) || 'id';
+
         if (this.template === null) {
             this.setAttribute('style', 'display:none');
-            setTimeout(() => {
+            requestAnimationFrame(() => {
                 this.template = Array.from(this.childNodes).filter(noEmptyTextNode());
                 this.innerHTML = ''; // we cleanup the innerHTML
                 this.removeAttribute('style');
                 this.render();
-            }, 0);
+                this.dispatchEvent(new CustomEvent('mounted',{
+                    bubbles : false
+                }));
+            });
         }
     }
+
 
     private render(): void {
         if (this.dataProvider === null || this.template === null) {
