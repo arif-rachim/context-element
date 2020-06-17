@@ -12,6 +12,7 @@ type ActionCallback = (type: Map<string, string>, event: Event) => void;
 type SetDataProvider = (oldDataProvider: Array<any>) => Array<any>;
 type DoubleMap<Type> = Map<Type,Map<Type,Type>>;
 type TripleMap<Type> = Map<Type,DoubleMap<Type>>;
+type FunctionReturnString<Type> = (data: Type) => string;
 /**
  * Function to remove empty text node.
  */
@@ -161,19 +162,29 @@ function createItemRenderer(dataNode: Array<Node>): Renderer {
 
 export class DataGroup extends HTMLElement {
     public reducer: Reducer<any>;
-    public dataKeySelector: (data: any) => string;
+    private dataKeySelector: FunctionReturnString<any>;
     private template: Array<Node>;
     private dataKeyField: string;
     private renderers: Map<string, Renderer>;
     private dataProvider: Array<any>;
-
+    private onMountedCallback:() => void;
     constructor() {
         super();
         this.template = null;
         this.dataProvider = null;
         this.renderers = new Map<string, Renderer>();
-        this.dataKeySelector = (data: any) => data[this.dataKeyField];
+        this.dataKeySelector = (data: any) => {
+            if(this.dataKeyField === undefined || this.dataKeyField === null){
+                const errorMessage = `'<data-group>' requires 'data-key' attribute. Data-key value should refer to the unique attribute of the data.`;
+                throw new Error(errorMessage);
+            }
+            return data[this.dataKeyField];
+        };
         this.reducer = (data) => data;
+    }
+
+    setDataKeySelector(selector:FunctionReturnString<any>){
+        this.dataKeySelector = selector;
     }
 
     setDataProvider(dataProvider: Array<any> | SetDataProvider): void {
@@ -185,21 +196,29 @@ export class DataGroup extends HTMLElement {
         this.render();
     }
 
-    connectedCallback() {
-        this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE) || 'id';
+    onMounted(onMountedCallback:() => void){
+        this.onMountedCallback = onMountedCallback;
+    }
 
+    connectedCallback() {
+        this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE);
         if (this.template === null) {
             this.setAttribute('style', 'display:none');
             requestAnimationFrame(() => {
-                this.template = Array.from(this.childNodes).filter(noEmptyTextNode());
-                this.innerHTML = ''; // we cleanup the innerHTML
+                this.populateTemplate();
                 this.removeAttribute('style');
                 this.render();
-                this.dispatchEvent(new CustomEvent('mounted',{
-                    bubbles : false
-                }));
+                if(this.onMountedCallback){
+                    this.onMountedCallback();
+                    this.onMountedCallback = null;
+                }
             });
         }
+    }
+
+    private populateTemplate():void{
+        this.template = Array.from(this.childNodes).filter(noEmptyTextNode());
+        this.innerHTML = ''; // we cleanup the innerHTML
     }
 
 
