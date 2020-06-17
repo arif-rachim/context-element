@@ -6,12 +6,10 @@
     <script src="src/data-group.ts"></script>
 </head>
 <body>
-<data-group id="data-group">
-    <div>
-        <input type="text" value.watch="name" input.action="setName" />
-        <div watch="name"></div>
-    </div>
-</data-group>
+<context-provider>
+    <input type="text" value.watch="name" input.action="setName"/>
+    <div watch="name"></div>
+</context-provider>
 </body>
 <script>
 

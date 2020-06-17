@@ -1,3 +1,5 @@
+import {ActionCallback, DoubleMap, FunctionReturnString, Reducer, Renderer, SetDataProvider, TripleMap} from "./types";
+
 const DATA_WATCH_ATTRIBUTE = 'watch';
 const DATA_KEY_ATTRIBUTE = 'data-key';
 const DATA_ACTION_ATTRIBUTE = 'action';
@@ -5,14 +7,6 @@ const DATA_TOGGLE_ATTRIBUTE = 'toggle';
 const STATE_PROPERTY = '@state';
 const STATE_GLOBAL = '*';
 
-type Renderer = { render: (data: any) => void, dataNode: Array<Node>, onAction: (callback: ActionCallback) => void };
-type Action = { type: string, data: any, key: string, event: Event };
-type Reducer<Type> = (data: Type, action: Action) => Type
-type ActionCallback = (type: Map<string, string>, event: Event) => void;
-type SetDataProvider = (oldDataProvider: Array<any>) => Array<any>;
-type DoubleMap<Type> = Map<Type,Map<Type,Type>>;
-type TripleMap<Type> = Map<Type,DoubleMap<Type>>;
-type FunctionReturnString<Type> = (data: Type) => string;
 /**
  * Function to remove empty text node.
  */
@@ -269,5 +263,6 @@ export class DataGroup extends HTMLElement {
         this.lastChild.remove();
     }
 }
+
 
 customElements.define('data-group', DataGroup);
