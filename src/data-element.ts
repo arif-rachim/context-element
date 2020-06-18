@@ -17,11 +17,11 @@ export class DataElement<Type> extends HTMLElement {
         this.reducer = (data) => data;
     }
 
-    get data(): any {
+    get data(): Type {
         return this.dataProvider;
     }
 
-    set data(value: any) {
+    set data(value: Type) {
         this.setDataProvider(() => value);
     }
 
@@ -55,7 +55,7 @@ export class DataElement<Type> extends HTMLElement {
         this.innerHTML = ''; // we cleanup the innerHTML
     };
 
-    private updateContextCallback = (value: any) => {
+    private updateContextCallback = (value: SetData<Type>) => {
         this.setDataProvider(value);
         const dataChangedEvent = getChangeEventName('data');
         if (dataChangedEvent in this) {

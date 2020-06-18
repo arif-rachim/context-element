@@ -5,7 +5,7 @@ import createItemRenderer from "./libs/create-item-renderer";
 export class DataGroup<Type> extends HTMLElement {
 
     public reducer: Reducer<Type[], Type>;
-    private dataKeySelector: FunctionReturnString<any>;
+    private dataKeySelector: FunctionReturnString<Type>;
     private template: Array<Node>;
     private dataKeyField: string;
     private renderers: Map<string, Renderer>;
@@ -17,25 +17,25 @@ export class DataGroup<Type> extends HTMLElement {
         this.template = null;
         this.dataProvider = null;
         this.renderers = new Map<string, Renderer>();
-        this.dataKeySelector = (data: any) => {
+        this.dataKeySelector = (data: Type) => {
             if (this.dataKeyField === undefined || this.dataKeyField === null) {
                 const errorMessage = `'<data-group>' requires 'data-key' attribute. Data-key value should refer to the unique attribute of the data.`;
                 throw new Error(errorMessage);
             }
-            return data[this.dataKeyField];
+            return (data as any)[this.dataKeyField];
         };
         this.reducer = (data) => data;
     }
 
-    get data(): any {
+    get data(): Type[] {
         return this.dataProvider;
     }
 
-    set data(value: any) {
+    set data(value: Type[]) {
         this.setDataProvider(() => value);
     }
 
-    public setDataKeySelector = (selector: FunctionReturnString<any>) => {
+    public setDataKeySelector = (selector: FunctionReturnString<Type>) => {
         this.dataKeySelector = selector;
     };
 
@@ -71,7 +71,7 @@ export class DataGroup<Type> extends HTMLElement {
         this.innerHTML = ''; // we cleanup the innerHTML
     };
 
-    private updateContextCallback = (value: any) => {
+    private updateContextCallback = (value: SetData<Type[]>) => {
         this.setDataProvider(value);
         const dataChangedEvent = getChangeEventName('data');
         if (dataChangedEvent in this) {
