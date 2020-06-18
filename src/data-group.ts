@@ -29,6 +29,15 @@ export class DataGroup<Type> extends DataElement<Type[], Type> {
         this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE);
     };
 
+    static get observedAttributes() {
+        return ['data-key'];
+    }
+
+    attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+        if (name === 'data-key') {
+            this.dataKeyField = newValue;
+        }
+    }
 
     protected render = () => {
         if (hasNoValue(this.dataProvider) || hasNoValue(this.template)) {
@@ -53,8 +62,8 @@ export class DataGroup<Type> extends DataElement<Type[], Type> {
                 }
                 lastNode = node;
             }
-            const dataRenderer = () => ({data, key: dataKey, index: (dpLength - index)});
-            itemRenderer.render(dataRenderer);
+            const dataGetter = () => ({data, key: dataKey, index: (dpLength - index)});
+            itemRenderer.render(dataGetter);
         });
         this.lastChild.remove();
     };

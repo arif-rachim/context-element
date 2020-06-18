@@ -25,7 +25,6 @@ export default function createItemRenderer<ReducerType, Output>(dataNode: Array<
     const activeNodes = Array.from(findNodesThatHaveAttributes(activeAttributes, dataNode));
     const nodesDictionary = activeNodes.map(node => ({dictionary: toDictionaries(node as HTMLElement), node}));
 
-
     const onActionCallback = (stateActionTypeMapping: Map<string, string>, event: Event) => {
         const onUpdateContextCallback = (oldContext: ReducerType) => {
             const {data, key, index} = dataGetter();
@@ -100,7 +99,6 @@ function toDictionaries(element: HTMLElement): TripleMap<string> {
         return acc;
     }, new Map<string, Map<string, Map<string, string>>>());
 }
-
 
 const findNodesThatHaveAttributes = (attributesSuffix: Array<string>, childNodes: Array<Node>) => {
     return Array.from(childNodes).filter(noEmptyTextNode()).reduce((accumulator, childNode) => {

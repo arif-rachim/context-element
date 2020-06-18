@@ -5,10 +5,12 @@ export type SetData<Type> = (oldData: Type) => Type;
 export type DoubleMap<Type> = Map<Type, Map<Type, Type>>;
 export type TripleMap<Type> = Map<Type, DoubleMap<Type>>;
 export type FunctionReturnString<Type> = (data: Type) => string;
-export type DataGetter<Output> = () => { key: string, data: Output, index: number };
+export type DataGetter<Output> = () => { key?: string, data: Output, index?: number };
+
 export const getChangeEventName = (attribute: any) => `${attribute}Changed`;
 export const hasValue = (param: any) => param !== undefined && param !== null && param !== '';
 export const hasNoValue = (param: any) => !hasValue(param);
+
 export const DATA_WATCH_ATTRIBUTE = 'watch';
 export const DATA_KEY_ATTRIBUTE = 'data-key';
 export const DATA_ACTION_ATTRIBUTE = 'action';

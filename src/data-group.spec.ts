@@ -116,4 +116,16 @@ test('it should render `watch` according to the state', (done) => {
     });
 });
 
+test('It should bind event against node', (done) => {
+    const dataGroup = createDataGroup('<input click.action="INPUT_CLICKED" >');
+    dataGroup.setAttribute('data-key', 'userId');
+    dataGroup.onMounted(() => {
+        dataGroup.data = generateRandomUser(5);
+        expect(dataGroup.childNodes.length).toEqual(5);
+        expect(dataGroup.firstChild instanceof HTMLInputElement).toBe(true);
+        expect(dataGroup.lastChild instanceof HTMLInputElement).toBe(true);
+        done();
+    });
+});
+
 

@@ -80,8 +80,8 @@ export class DataElement<Type, Output> extends HTMLElement {
             }
             lastNode = node;
         }
-        const dataRenderer = () => ({data: this.dataProvider, key: ''});
-        this.renderer.render(dataRenderer);
+        const dataGetter = () => ({data: this.dataProvider});
+        this.renderer.render(dataGetter);
         this.lastChild.remove();
     };
 
