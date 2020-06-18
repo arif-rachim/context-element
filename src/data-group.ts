@@ -1,24 +1,18 @@
-import {DATA_KEY_ATTRIBUTE, FunctionReturnString, getChangeEventName, Reducer, Renderer, SetData} from "./types";
-import noEmptyTextNode from "./libs/no-empty-text-node";
+import {DATA_KEY_ATTRIBUTE, FunctionReturnString, hasNoValue, Renderer} from "./types";
 import createItemRenderer from "./libs/create-item-renderer";
+import {DataElement} from "./data-element";
 
-export class DataGroup<Type> extends HTMLElement {
+export class DataGroup<Type> extends DataElement<Type[], Type> {
 
-    public reducer: Reducer<Type[], Type>;
     private dataKeySelector: FunctionReturnString<Type>;
-    private template: Array<Node>;
     private dataKeyField: string;
     private renderers: Map<string, Renderer>;
-    private dataProvider: Type[];
-    private onMountedCallback: () => void;
 
     constructor() {
         super();
-        this.template = null;
-        this.dataProvider = null;
         this.renderers = new Map<string, Renderer>();
         this.dataKeySelector = (data: Type) => {
-            if (this.dataKeyField === undefined || this.dataKeyField === null) {
+            if (hasNoValue(this.dataKeyField)) {
                 const errorMessage = `'<data-group>' requires 'data-key' attribute. Data-key value should refer to the unique attribute of the data.`;
                 throw new Error(errorMessage);
             }
@@ -27,60 +21,17 @@ export class DataGroup<Type> extends HTMLElement {
         this.reducer = (data) => data;
     }
 
-    get data(): Type[] {
-        return this.dataProvider;
-    }
-
-    set data(value: Type[]) {
-        this.setDataProvider(() => value);
-    }
-
     public setDataKeySelector = (selector: FunctionReturnString<Type>) => {
         this.dataKeySelector = selector;
     };
 
-    public setDataProvider = (dataProvider: SetData<Type[]>) => {
-        this.dataProvider = dataProvider(this.dataProvider);
-        this.render();
-    };
-
-    public onMounted = (onMountedCallback: () => void) => {
-        this.onMountedCallback = onMountedCallback;
-    };
-
-    connectedCallback() {
-
+    protected initAttribute = () => {
         this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE);
-        if (this.template === null) {
-            this.setAttribute('style', 'display:none');
-            const requestAnimationFrameCallback = () => {
-                this.populateTemplate();
-                this.removeAttribute('style');
-                this.render();
-                if (this.onMountedCallback) {
-                    this.onMountedCallback();
-                    this.onMountedCallback = null;
-                }
-            };
-            requestAnimationFrame(requestAnimationFrameCallback);
-        }
-    }
-
-    private populateTemplate = () => {
-        this.template = Array.from(this.childNodes).filter(noEmptyTextNode());
-        this.innerHTML = ''; // we cleanup the innerHTML
     };
 
-    private updateContextCallback = (value: SetData<Type[]>) => {
-        this.setDataProvider(value);
-        const dataChangedEvent = getChangeEventName('data');
-        if (dataChangedEvent in this) {
-            (this as any)[dataChangedEvent].call(this, this.dataProvider);
-        }
-    };
 
-    private render = () => {
-        if (this.dataProvider === null || this.template === null) {
+    protected render = () => {
+        if (hasNoValue(this.dataProvider) || hasNoValue(this.template)) {
             return;
         }
         this.removeExpiredData();
@@ -102,7 +53,8 @@ export class DataGroup<Type> extends HTMLElement {
                 }
                 lastNode = node;
             }
-            itemRenderer.render(() => ({data, key: dataKey, index: (dpLength - index)}));
+            const dataRenderer = () => ({data, key: dataKey, index: (dpLength - index)});
+            itemRenderer.render(dataRenderer);
         });
         this.lastChild.remove();
     };

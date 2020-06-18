@@ -3,6 +3,7 @@ import {
     DATA_TOGGLE_ATTRIBUTE,
     DATA_WATCH_ATTRIBUTE,
     DataGetter,
+    hasNoValue,
     IGNORE_CONTEXT,
     Reducer,
     Renderer,
@@ -32,7 +33,7 @@ export default function createItemRenderer<ReducerType, Output>(dataNode: Array<
             action.type = stateActionTypeMapping.get(STATE_GLOBAL) || '';
             action.type = stateActionTypeMapping.get((data as any)[STATE_PROPERTY]) || action.type;
 
-            if (key === '') {
+            if (hasNoValue(key)) {
                 delete action.key;
                 delete action.data;
                 delete action.index;

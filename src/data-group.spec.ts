@@ -9,7 +9,7 @@ const createDataGroup = (innerHTML?: string) => {
     element.innerHTML = innerHTML;
     element.setAttribute('id', randomId);
     document.body.append(element);
-    return document.body.querySelector(`#${randomId}`) as DataGroup;
+    return document.body.querySelector(`#${randomId}`) as DataGroup<any>;
 };
 
 const generateRandomUser = (length: number) => {
@@ -32,7 +32,7 @@ test('It should throw error when setting dataProvider without keySelector', (don
     const users = generateRandomUser(10);
     dataGroup.onMounted(() => {
         expect(() => {
-            dataGroup.setDataProvider(users);
+            dataGroup.setData(() => users);
         }).toThrow();
         done();
     });
@@ -43,7 +43,7 @@ test('It should render the childNodes and validate the length based on dataProvi
     const dataGroup = createDataGroup(`<div watch="name"></div>`);
     const users = generateRandomUser(10);
     dataGroup.setDataKeySelector((data) => data.userId);
-    dataGroup.setDataProvider(users);
+    dataGroup.setData(() => users);
     dataGroup.onMounted(() => {
         expect(dataGroup.childNodes.length).toBe(10);
         done();
@@ -54,12 +54,12 @@ test('It should perform remove', (done) => {
     const dataGroup = createDataGroup(`<div watch="name"></div>`);
     const users = generateRandomUser(10);
     dataGroup.setDataKeySelector((data) => data.userId);
-    dataGroup.setDataProvider(users);
+    dataGroup.setData(() => users);
     dataGroup.onMounted(() => {
         expect(dataGroup.childNodes.length).toBe(10);
-        dataGroup.setDataProvider([]);
+        dataGroup.setData(() => []);
         expect(dataGroup.childNodes.length).toBe(0);
-        dataGroup.setDataProvider(generateRandomUser(4));
+        dataGroup.setData(() => generateRandomUser(4));
         expect(dataGroup.childNodes.length).toBe(4);
         done();
     });
@@ -80,30 +80,30 @@ test('it should render `watch` according to the state', (done) => {
             lastName: lastName
         }
     });
-    dataGroup.setDataProvider(() => {
+    dataGroup.setData(() => {
         return dataProvider;
     });
     dataGroup.onMounted(() => {
         const contentOnDefaultState = Array.from(dataGroup.childNodes).map(node => (node as HTMLElement).innerHTML);
         const usersFullName = dataProvider.map(data => data.fullName);
         expect(contentOnDefaultState).toEqual(usersFullName);
-        dataGroup.setDataProvider((old) => {
+        dataGroup.setData((old) => {
             return old.map(data => ({...data, ['@state']: 'state-one'}));
         });
         const contentOnStateOne = Array.from(dataGroup.childNodes).map(node => (node as HTMLElement).innerHTML);
         expect(contentOnStateOne).toEqual(dataProvider.map(data => data.firstName));
-        dataGroup.setDataProvider((old) => {
+        dataGroup.setData((old) => {
             return old.map(data => ({...data, ['@state']: 'state-two'}));
         });
         const contentOnStateTwo = Array.from(dataGroup.childNodes).map(node => (node as HTMLElement).innerHTML);
         expect(contentOnStateTwo).toEqual(dataProvider.map(data => data.lastName));
-        dataGroup.setDataProvider((old) => {
+        dataGroup.setData((old) => {
             return old.map(data => ({...data, ['@state']: 'state-three'}));
         });
         const contentOnStateThree = Array.from(dataGroup.childNodes).map(node => (node as HTMLElement).innerHTML);
         expect(contentOnStateThree).toEqual(dataProvider.map(data => data.fullName));
 
-        dataGroup.setDataProvider((old) => {
+        dataGroup.setData((old) => {
             return old.map(data => {
                 const newData = ({...data});
                 delete newData['@state'];

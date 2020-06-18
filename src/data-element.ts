@@ -1,14 +1,13 @@
-import {getChangeEventName, Reducer, Renderer, SetData} from "./types";
+import {getChangeEventName, hasNoValue, Reducer, Renderer, SetData} from "./types";
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import createItemRenderer from "./libs/create-item-renderer";
 
-
-export class DataElement<Type> extends HTMLElement {
-    public reducer: Reducer<Type, Type>;
-    private template: Node[];
-    private renderer: Renderer;
-    private dataProvider: Type;
-    private onMountedCallback: () => void;
+export class DataElement<Type, Output> extends HTMLElement {
+    public reducer: Reducer<Type, Output>;
+    protected template: Node[];
+    protected renderer: Renderer;
+    protected dataProvider: Type;
+    protected onMountedCallback: () => void;
 
     constructor() {
         super();
@@ -22,10 +21,10 @@ export class DataElement<Type> extends HTMLElement {
     }
 
     set data(value: Type) {
-        this.setDataProvider(() => value);
+        this.setData(() => value);
     }
 
-    public setDataProvider = (context: SetData<Type>) => {
+    public setData = (context: SetData<Type>) => {
         this.dataProvider = context(this.dataProvider);
         this.render();
     };
@@ -35,7 +34,8 @@ export class DataElement<Type> extends HTMLElement {
     };
 
     connectedCallback() {
-        if (this.template === null) {
+        this.initAttribute();
+        if (hasNoValue(this.template)) {
             this.setAttribute('style', 'display:none');
             const requestAnimationFrameCallback = () => {
                 this.populateTemplate();
@@ -55,21 +55,21 @@ export class DataElement<Type> extends HTMLElement {
         this.innerHTML = ''; // we cleanup the innerHTML
     };
 
-    private updateContextCallback = (value: SetData<Type>) => {
-        this.setDataProvider(value);
+    protected updateContextCallback = (value: SetData<Type>) => {
+        this.setData(value);
         const dataChangedEvent = getChangeEventName('data');
         if (dataChangedEvent in this) {
             (this as any)[dataChangedEvent].call(this, this.dataProvider);
         }
     };
 
-    private render = () => {
-        if (this.dataProvider === null || this.template === null) {
+    protected render = () => {
+        if (hasNoValue(this.dataProvider) || hasNoValue(this.template)) {
             return;
         }
         let lastNode: Node = document.createElement('template');
         this.append(lastNode);
-        if (this.renderer === null) {
+        if (hasNoValue(this.renderer)) {
             const dataNode = this.template.map(node => node.cloneNode(true));
             this.renderer = createItemRenderer(dataNode, this.updateContextCallback, this.reducer);
         }
@@ -80,8 +80,13 @@ export class DataElement<Type> extends HTMLElement {
             }
             lastNode = node;
         }
-        this.renderer.render(() => ({data: this.dataProvider, key: ''}));
+        const dataRenderer = () => ({data: this.dataProvider, key: ''});
+        this.renderer.render(dataRenderer);
         this.lastChild.remove();
+    };
+
+    protected initAttribute = () => {
+        // we are nt implementing here
     };
 }
 
