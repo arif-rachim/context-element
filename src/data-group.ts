@@ -1,24 +1,15 @@
-import {
-    DATA_KEY_ATTRIBUTE,
-    FunctionReturnString,
-    getChangeEventName,
-    IGNORE_CONTEXT,
-    Reducer,
-    Renderer,
-    SetDataProvider
-} from "./types";
+import {DATA_KEY_ATTRIBUTE, FunctionReturnString, getChangeEventName, Reducer, Renderer, SetData} from "./types";
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import createItemRenderer from "./libs/create-item-renderer";
 
-export class DataGroup extends HTMLElement {
+export class DataGroup<Type> extends HTMLElement {
 
-
-    public reducer: Reducer<Array<any>>;
+    public reducer: Reducer<Type[], Type>;
     private dataKeySelector: FunctionReturnString<any>;
     private template: Array<Node>;
     private dataKeyField: string;
     private renderers: Map<string, Renderer>;
-    private dataProvider: Array<any>;
+    private dataProvider: Type[];
     private onMountedCallback: () => void;
 
     constructor() {
@@ -48,11 +39,8 @@ export class DataGroup extends HTMLElement {
         this.dataKeySelector = selector;
     };
 
-    public setDataProvider = (dataProvider: Array<any> | SetDataProvider) => {
-        if (dataProvider === IGNORE_CONTEXT) {
-            return;
-        }
-        this.dataProvider = Array.isArray(dataProvider) ? dataProvider : dataProvider(this.dataProvider);
+    public setDataProvider = (dataProvider: SetData<Type[]>) => {
+        this.dataProvider = dataProvider(this.dataProvider);
         this.render();
     };
 
@@ -103,7 +91,7 @@ export class DataGroup extends HTMLElement {
             const dataKey = this.dataKeySelector(data);
             if (!this.renderers.has(dataKey)) {
                 const dataNode = this.template.map(node => node.cloneNode(true));
-                const itemRenderer = createItemRenderer<Array<any>>(dataNode, this.updateContextCallback, this.reducer);
+                const itemRenderer = createItemRenderer(dataNode, this.updateContextCallback, this.reducer);
                 this.renderers.set(dataKey, itemRenderer);
             }
             const itemRenderer = this.renderers.get(dataKey);

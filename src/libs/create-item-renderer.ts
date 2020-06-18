@@ -17,9 +17,9 @@ import noEmptyTextNode from "./no-empty-text-node";
 import {DataGroup} from "../data-group";
 import {DataElement} from "../data-element";
 
-export default function createItemRenderer<ReducerType>(dataNode: Array<Node>, updateContextCallback: any, reducer: Reducer<ReducerType>): Renderer {
+export default function createItemRenderer<ReducerType, Output>(dataNode: Array<Node>, updateContextCallback: any, reducer: Reducer<ReducerType, Output>): Renderer {
 
-    let dataGetter: DataGetter;
+    let dataGetter: DataGetter<Output>;
     const activeAttributes = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE];
     const activeNodes = Array.from(findNodesThatHaveAttributes(activeAttributes, dataNode));
     const nodesDictionary = activeNodes.map(node => ({dictionary: toDictionaries(node as HTMLElement), node}));
@@ -30,7 +30,7 @@ export default function createItemRenderer<ReducerType>(dataNode: Array<Node>, u
             const {data, key, index} = dataGetter();
             let action = {event: event, type: '', data: data, key: key, index};
             action.type = stateActionTypeMapping.get(STATE_GLOBAL) || '';
-            action.type = stateActionTypeMapping.get(data[STATE_PROPERTY]) || action.type;
+            action.type = stateActionTypeMapping.get((data as any)[STATE_PROPERTY]) || action.type;
 
             if (key === '') {
                 delete action.key;
@@ -47,7 +47,7 @@ export default function createItemRenderer<ReducerType>(dataNode: Array<Node>, u
     };
     nodesDictionary.forEach(({dictionary, node}) => listenEventOnNode(node as HTMLElement, dictionary, onActionCallback));
     return {
-        render: (getter: DataGetter) => {
+        render: (getter: DataGetter<Output>) => {
             dataGetter = getter;
             const {data} = getter();
             nodesDictionary.forEach(({dictionary, node}) => printDataOnNode(node as HTMLElement, dictionary, data));

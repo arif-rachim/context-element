@@ -36,7 +36,7 @@
         }
         return [...array];
     };
-    dataElement.setDataProvider({todo: '', todos: [], itemReducer});
+    dataElement.setDataProvider(() => ({todo: '', todos: [], itemReducer}));
     dataElement.reducer = (context, action) => {
         switch (action.type) {
             case 'SET_TODO' : {

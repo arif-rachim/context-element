@@ -1,13 +1,13 @@
-import {getChangeEventName, IGNORE_CONTEXT, isFunction, Reducer, Renderer, SetDataProvider} from "./types";
+import {getChangeEventName, Reducer, Renderer, SetData} from "./types";
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import createItemRenderer from "./libs/create-item-renderer";
 
 
-export class DataElement extends HTMLElement {
-    public reducer: Reducer<any>;
-    private template: Array<Node>;
+export class DataElement<Type> extends HTMLElement {
+    public reducer: Reducer<Type, Type>;
+    private template: Node[];
     private renderer: Renderer;
-    private dataProvider: any;
+    private dataProvider: Type;
     private onMountedCallback: () => void;
 
     constructor() {
@@ -25,11 +25,8 @@ export class DataElement extends HTMLElement {
         this.setDataProvider(() => value);
     }
 
-    public setDataProvider = (context: any | SetDataProvider) => {
-        if (context === IGNORE_CONTEXT) {
-            return;
-        }
-        this.dataProvider = isFunction(context) ? context(this.dataProvider) : context;
+    public setDataProvider = (context: SetData<Type>) => {
+        this.dataProvider = context(this.dataProvider);
         this.render();
     };
 
