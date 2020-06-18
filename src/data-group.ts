@@ -65,7 +65,7 @@ export class DataGroup extends HTMLElement {
         this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE);
         if (this.template === null) {
             this.setAttribute('style', 'display:none');
-            requestAnimationFrame(() => {
+            const requestAnimationFrameCallback = () => {
                 this.populateTemplate();
                 this.removeAttribute('style');
                 this.render();
@@ -73,7 +73,8 @@ export class DataGroup extends HTMLElement {
                     this.onMountedCallback();
                     this.onMountedCallback = null;
                 }
-            });
+            };
+            requestAnimationFrame(requestAnimationFrameCallback);
         }
     }
 

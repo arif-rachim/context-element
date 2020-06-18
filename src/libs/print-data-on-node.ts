@@ -7,6 +7,7 @@ import {
     STATE_PROPERTY,
     TripleMap
 } from "../types";
+import isValidAttribute from "./html-attributes";
 
 export default function printDataOnNode(element: HTMLElement, dictionary: TripleMap<string>, data: any): void {
 
@@ -17,7 +18,12 @@ export default function printDataOnNode(element: HTMLElement, dictionary: Triple
                 const attributeMapping: Map<string, string> = stateDictionary.has(dataState) ? stateDictionary.get(dataState) : stateDictionary.get(STATE_GLOBAL);
                 attributeMapping.forEach((bindingAttribute: string, attributeName: string) => {
                     const val = data[bindingAttribute];
-                    element.setAttribute(attributeName, val);
+                    if (isValidAttribute(attributeName, element.tagName)) {
+                        element.setAttribute(attributeName, val);
+                    } else {
+                        console.warn(`attribute ${attributeName} is not valid attribute for ${element.tagName}`);
+                    }
+
                     if (attributeName in element) {
                         (element as any)[attributeName] = val;
                         const eventName = getChangeEventName(attributeName);

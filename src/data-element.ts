@@ -40,7 +40,7 @@ export class DataElement extends HTMLElement {
     connectedCallback() {
         if (this.template === null) {
             this.setAttribute('style', 'display:none');
-            requestAnimationFrame(() => {
+            const requestAnimationFrameCallback = () => {
                 this.populateTemplate();
                 this.removeAttribute('style');
                 this.render();
@@ -48,7 +48,8 @@ export class DataElement extends HTMLElement {
                     this.onMountedCallback();
                     this.onMountedCallback = null;
                 }
-            });
+            };
+            requestAnimationFrame(requestAnimationFrameCallback);
         }
     }
 
