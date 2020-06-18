@@ -15,22 +15,27 @@ import listenEventOnNode from "./listen-event-on-node";
 import printDataOnNode from "./print-data-on-node";
 import noEmptyTextNode from "./no-empty-text-node";
 import {DataGroup} from "../data-group";
+import {DataElement} from "../data-element";
 
 export default function createItemRenderer<ReducerType>(dataNode: Array<Node>, updateContextCallback: any, reducer: Reducer<ReducerType>): Renderer {
 
     let dataGetter: DataGetter;
-    const activeNodes = Array.from(findNodesThatHaveAttributes([DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE], dataNode));
+    const activeAttributes = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE];
+    const activeNodes = Array.from(findNodesThatHaveAttributes(activeAttributes, dataNode));
     const nodesDictionary = activeNodes.map(node => ({dictionary: toDictionaries(node as HTMLElement), node}));
+
+
     const onActionCallback = (stateActionTypeMapping: Map<string, string>, event: Event) => {
         const onUpdateContextCallback = (oldContext: ReducerType) => {
-            const {data, key} = dataGetter();
-            let action = {event: event, type: '', data: data, key: key};
+            const {data, key, index} = dataGetter();
+            let action = {event: event, type: '', data: data, key: key, index};
             action.type = stateActionTypeMapping.get(STATE_GLOBAL) || '';
             action.type = stateActionTypeMapping.get(data[STATE_PROPERTY]) || action.type;
 
             if (key === '') {
                 delete action.key;
                 delete action.data;
+                delete action.index;
             }
 
             if (action.type) {
@@ -53,9 +58,11 @@ export default function createItemRenderer<ReducerType>(dataNode: Array<Node>, u
 
 
 function toDictionaries(element: HTMLElement): TripleMap<string> {
+
     const attributesToWatch = element.getAttributeNames().filter(name => {
-        return (name.indexOf(DATA_WATCH_ATTRIBUTE) >= 0) || (name.indexOf(DATA_TOGGLE_ATTRIBUTE) >= 0) || (name.indexOf(DATA_ACTION_ATTRIBUTE))
+        return (name.indexOf(DATA_WATCH_ATTRIBUTE) >= 0) || (name.indexOf(DATA_TOGGLE_ATTRIBUTE) >= 0) || (name.indexOf(DATA_ACTION_ATTRIBUTE) >= 0);
     });
+
     return attributesToWatch.reduce((acc: TripleMap<string>, attributeKey: string) => {
         let attribute = '', state = STATE_GLOBAL, type = '';
         let keys = attributeKey.split('.');
@@ -79,6 +86,8 @@ function toDictionaries(element: HTMLElement): TripleMap<string> {
             }
         }
         const value = element.getAttribute(attributeKey);
+        element.removeAttribute(attributeKey);
+
         if (!acc.has(type)) {
             acc.set(type, new Map<string, Map<string, string>>());
         }
@@ -86,6 +95,7 @@ function toDictionaries(element: HTMLElement): TripleMap<string> {
             acc.get(type).set(state, new Map<string, string>())
         }
         acc.get(type).get(state).set(attribute, value);
+
         return acc;
     }, new Map<string, Map<string, Map<string, string>>>());
 }
@@ -97,6 +107,7 @@ const findNodesThatHaveAttributes = (attributesSuffix: Array<string>, childNodes
             return accumulator;
         }
         const element = childNode as HTMLElement;
+
         const attributeNames = element.getAttributeNames();
         for (const attribute of attributeNames) {
             for (const attributeSuffix of attributesSuffix) {
@@ -106,7 +117,7 @@ const findNodesThatHaveAttributes = (attributesSuffix: Array<string>, childNodes
                 }
             }
         }
-        if (!(element instanceof DataGroup)) {
+        if (!(element instanceof DataGroup || element instanceof DataElement)) {
             const childrenNodes = findNodesThatHaveAttributes(attributesSuffix, Array.from(element.childNodes));
             Array.from(childrenNodes).forEach(childNode => accumulator.add(childNode));
         }

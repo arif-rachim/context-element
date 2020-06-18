@@ -1,16 +1,13 @@
-import {IGNORE_CONTEXT, Reducer, Renderer, SetDataProvider} from "./types";
+import {getChangeEventName, IGNORE_CONTEXT, isFunction, Reducer, Renderer, SetDataProvider} from "./types";
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import createItemRenderer from "./libs/create-item-renderer";
 
-function isFunction(functionToCheck: any) {
-    return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
-}
 
-export class ContextProvider extends HTMLElement {
+export class DataElement extends HTMLElement {
     public reducer: Reducer<any>;
     private template: Array<Node>;
     private renderer: Renderer;
-    private context: any;
+    private dataProvider: any;
     private onMountedCallback: () => void;
 
     constructor() {
@@ -20,11 +17,19 @@ export class ContextProvider extends HTMLElement {
         this.reducer = (data) => data;
     }
 
-    public setContext = (context: any | SetDataProvider) => {
+    get data(): any {
+        return this.dataProvider;
+    }
+
+    set data(value: any) {
+        this.setDataProvider(() => value);
+    }
+
+    public setDataProvider = (context: any | SetDataProvider) => {
         if (context === IGNORE_CONTEXT) {
             return;
         }
-        this.context = isFunction(context) ? context(this.context) : context;
+        this.dataProvider = isFunction(context) ? context(this.dataProvider) : context;
         this.render();
     };
 
@@ -52,15 +57,23 @@ export class ContextProvider extends HTMLElement {
         this.innerHTML = ''; // we cleanup the innerHTML
     };
 
+    private updateContextCallback = (value: any) => {
+        this.setDataProvider(value);
+        const dataChangedEvent = getChangeEventName('data');
+        if (dataChangedEvent in this) {
+            (this as any)[dataChangedEvent].call(this, this.dataProvider);
+        }
+    };
+
     private render = () => {
-        if (this.context === null || this.template === null) {
+        if (this.dataProvider === null || this.template === null) {
             return;
         }
         let lastNode: Node = document.createElement('template');
         this.append(lastNode);
         if (this.renderer === null) {
             const dataNode = this.template.map(node => node.cloneNode(true));
-            this.renderer = createItemRenderer(dataNode, this.setContext, this.reducer);
+            this.renderer = createItemRenderer(dataNode, this.updateContextCallback, this.reducer);
         }
         const reversedDataNodes = [...this.renderer.dataNode].reverse();
         for (const node of reversedDataNodes) {
@@ -69,9 +82,8 @@ export class ContextProvider extends HTMLElement {
             }
             lastNode = node;
         }
-        this.renderer.render(() => ({data: this.context, key: ''}));
+        this.renderer.render(() => ({data: this.dataProvider, key: ''}));
         this.lastChild.remove();
     };
-
 }
 

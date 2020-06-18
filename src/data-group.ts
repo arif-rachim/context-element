@@ -1,8 +1,18 @@
-import {DATA_KEY_ATTRIBUTE, FunctionReturnString, IGNORE_CONTEXT, Reducer, Renderer, SetDataProvider} from "./types";
+import {
+    DATA_KEY_ATTRIBUTE,
+    FunctionReturnString,
+    getChangeEventName,
+    IGNORE_CONTEXT,
+    Reducer,
+    Renderer,
+    SetDataProvider
+} from "./types";
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import createItemRenderer from "./libs/create-item-renderer";
 
 export class DataGroup extends HTMLElement {
+
+
     public reducer: Reducer<Array<any>>;
     private dataKeySelector: FunctionReturnString<any>;
     private template: Array<Node>;
@@ -26,6 +36,14 @@ export class DataGroup extends HTMLElement {
         this.reducer = (data) => data;
     }
 
+    get data(): any {
+        return this.dataProvider;
+    }
+
+    set data(value: any) {
+        this.setDataProvider(() => value);
+    }
+
     public setDataKeySelector = (selector: FunctionReturnString<any>) => {
         this.dataKeySelector = selector;
     };
@@ -43,6 +61,7 @@ export class DataGroup extends HTMLElement {
     };
 
     connectedCallback() {
+
         this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE);
         if (this.template === null) {
             this.setAttribute('style', 'display:none');
@@ -63,6 +82,14 @@ export class DataGroup extends HTMLElement {
         this.innerHTML = ''; // we cleanup the innerHTML
     };
 
+    private updateContextCallback = (value: any) => {
+        this.setDataProvider(value);
+        const dataChangedEvent = getChangeEventName('data');
+        if (dataChangedEvent in this) {
+            (this as any)[dataChangedEvent].call(this, this.dataProvider);
+        }
+    };
+
     private render = () => {
         if (this.dataProvider === null || this.template === null) {
             return;
@@ -70,11 +97,12 @@ export class DataGroup extends HTMLElement {
         this.removeExpiredData();
         let lastNode: Node = document.createElement('template');
         this.append(lastNode);
-        [...this.dataProvider].reverse().forEach((data) => {
+        const dpLength = this.dataProvider.length - 1;
+        [...this.dataProvider].reverse().forEach((data, index) => {
             const dataKey = this.dataKeySelector(data);
             if (!this.renderers.has(dataKey)) {
                 const dataNode = this.template.map(node => node.cloneNode(true));
-                const itemRenderer = createItemRenderer<Array<any>>(dataNode, this.setDataProvider, this.reducer);
+                const itemRenderer = createItemRenderer<Array<any>>(dataNode, this.updateContextCallback, this.reducer);
                 this.renderers.set(dataKey, itemRenderer);
             }
             const itemRenderer = this.renderers.get(dataKey);
@@ -85,7 +113,7 @@ export class DataGroup extends HTMLElement {
                 }
                 lastNode = node;
             }
-            itemRenderer.render(() => ({data, key: dataKey}));
+            itemRenderer.render(() => ({data, key: dataKey, index: (dpLength - index)}));
         });
         this.lastChild.remove();
     };
@@ -98,6 +126,6 @@ export class DataGroup extends HTMLElement {
             this.renderers.get(key).dataNode.forEach(node => (node as ChildNode).remove());
             this.renderers.delete(key);
         });
-    }
+    };
 }
 

@@ -1,5 +1,5 @@
 import {DataGroup} from "./data-group";
-import {ContextProvider} from "./context-provider";
+import {DataElement} from "./data-element";
 
 customElements.define('data-group', DataGroup);
-customElements.define('context-provider', ContextProvider);
+customElements.define('data-element', DataElement);

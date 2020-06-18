@@ -1,12 +1,14 @@
 export type Reducer<Type> = (data: Type, action: Action) => Type
 export type Action = { type: string, data: any, key: string, event: Event };
 export type Renderer = { render: (dataGetter: () => any) => void, dataNode: Array<Node> };
-export type ActionCallback = (type: Map<string, string>, event: Event) => void;
 export type SetDataProvider = (oldDataProvider: Array<any>) => Array<any>;
 export type DoubleMap<Type> = Map<Type, Map<Type, Type>>;
 export type TripleMap<Type> = Map<Type, DoubleMap<Type>>;
 export type FunctionReturnString<Type> = (data: Type) => string;
-export type DataGetter = () => { key: string, data: any };
+export type DataGetter = () => { key: string, data: any, index: number };
+
+export const getChangeEventName = (attribute: any) => `${attribute}Changed`;
+export const isFunction = (functionToCheck: any) => functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
 
 export const DATA_WATCH_ATTRIBUTE = 'watch';
 export const DATA_KEY_ATTRIBUTE = 'data-key';

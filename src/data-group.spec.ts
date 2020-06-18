@@ -1,4 +1,5 @@
 import {DataGroup} from './data-group';
+import './index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
 

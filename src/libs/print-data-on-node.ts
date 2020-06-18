@@ -2,6 +2,7 @@ import {
     DATA_TOGGLE_ATTRIBUTE,
     DATA_WATCH_ATTRIBUTE,
     DoubleMap,
+    getChangeEventName,
     STATE_GLOBAL,
     STATE_PROPERTY,
     TripleMap
@@ -19,6 +20,8 @@ export default function printDataOnNode(element: HTMLElement, dictionary: Triple
                     element.setAttribute(attributeName, val);
                     if (attributeName in element) {
                         (element as any)[attributeName] = val;
+                        const eventName = getChangeEventName(attributeName);
+                        (element as any)[eventName] = (val: any) => data[bindingAttribute] = val;
                     }
                     if (attributeName === 'content') {
                         element.innerHTML = val;
