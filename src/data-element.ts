@@ -2,11 +2,11 @@ import {composeChangeEventName, DataSetter, hasNoValue, hasValue, HIDE_CLASS, Re
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import DataRenderer from "./libs/data-renderer";
 
-export class DataElement<T, O> extends HTMLElement {
-    public reducer: Reducer<T, O>;
+export class DataElement<DataSource, Item> extends HTMLElement {
+    public reducer: Reducer<DataSource, Item>;
     protected template: ChildNode[];
-    protected renderer: DataRenderer<T, O>;
-    protected dataSource: T;
+    protected renderer: DataRenderer<DataSource, Item>;
+    protected dataSource: DataSource;
     protected onMountedCallback: () => void;
 
     constructor() {
@@ -16,15 +16,15 @@ export class DataElement<T, O> extends HTMLElement {
         this.reducer = (data) => data;
     }
 
-    get data(): T {
+    get data(): DataSource {
         return this.dataSource;
     }
 
-    set data(value: T) {
+    set data(value: DataSource) {
         this.setData(() => value);
     }
 
-    public setData = (context: DataSetter<T>) => {
+    public setData = (context: DataSetter<DataSource>) => {
         this.dataSource = context(this.dataSource);
         this.render();
     };
@@ -50,7 +50,7 @@ export class DataElement<T, O> extends HTMLElement {
         }
     }
 
-    protected updateDataCallback = (dataSetter: DataSetter<T>) => {
+    protected updateDataCallback = (dataSetter: DataSetter<DataSource>) => {
         this.setData(dataSetter);
         const dataChangedEvent: string = composeChangeEventName('data');
         if (dataChangedEvent in this) {
@@ -75,7 +75,9 @@ export class DataElement<T, O> extends HTMLElement {
             }
             anchorNode = node;
         }
-        const dataGetter = () => ({data: this.dataSource});
+        // @ts-ignore
+        const data = this.dataSource as Item;
+        const dataGetter = () => ({data});
         this.renderer.render(dataGetter);
         this.lastChild.remove();
     };

@@ -7,7 +7,7 @@ import {
     STATE_PROPERTY,
     TripleMap
 } from "../types";
-import isValidAttribute from "./html-attributes";
+import isValidAttribute from "./attribute-validator";
 
 export default function printDataOnNode<Type>(element: HTMLElement, dictionary: TripleMap<string>, data: Type): void {
 

@@ -5,7 +5,8 @@ export type DataSetter<O> = (oldData: O) => O;
 export type DoubleMap<O> = Map<O, Map<O, O>>;
 export type TripleMap<O> = Map<O, DoubleMap<O>>;
 export type ToString<O> = (data: O) => string;
-export type DataGetter<O> = () => { key?: string, data: O, index?: number };
+export type DataGetter<O> = () => DataGetterValue<O>;
+export type DataGetterValue<O> = { key?: string, data: O, index?: number };
 export type UpdateDataCallback<O> = (value: DataSetter<O>) => void;
 export type TypeStateAttribute = { activeNode: ChildNode; typeStateAttribute: Map<string, DoubleMap<string>> };
 

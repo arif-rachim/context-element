@@ -3,6 +3,7 @@ import {
     DATA_TOGGLE_ATTRIBUTE,
     DATA_WATCH_ATTRIBUTE,
     DataGetter,
+    DataGetterValue,
     hasNoValue,
     IGNORE_DATA,
     Reducer,
@@ -19,25 +20,25 @@ import {DataGroup} from "../data-group";
 import {DataElement} from "../data-element";
 import {createTypeStateAttribute} from "./type-state-attribute";
 
-export default class DataRenderer<T, O> {
+export default class DataRenderer<DataSource, Item> {
 
     public readonly nodes: ChildNode[];
-    private readonly updateData: UpdateDataCallback<T>;
-    private readonly reducer: Reducer<T, O>;
-    private dataGetter: DataGetter<O>;
+    private readonly updateData: UpdateDataCallback<DataSource>;
+    private readonly reducer: Reducer<DataSource, Item>;
+    private dataGetter: DataGetter<Item>;
     private typeStateAttributeNode: TypeStateAttribute[];
 
-    constructor(nodes: ChildNode[], updateData: UpdateDataCallback<T>, reducer: Reducer<T, O>) {
+    constructor(nodes: ChildNode[], updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource, Item>) {
         this.nodes = nodes;
         this.updateData = updateData;
         this.reducer = reducer;
         this.init();
     }
 
-    public render = (getter: DataGetter<any>) => {
+    public render = (getter: DataGetter<Item>) => {
         this.dataGetter = getter;
-        const {data} = getter();
-        this.typeStateAttributeNode.forEach(({typeStateAttribute, activeNode}) => printDataOnNode(activeNode as HTMLElement, typeStateAttribute, data));
+        const dataGetterValue: DataGetterValue<Item> = getter();
+        this.typeStateAttributeNode.forEach((tsa) => printDataOnNode(tsa.activeNode as HTMLElement, tsa.typeStateAttribute, dataGetterValue.data));
     };
 
     private init = () => {
@@ -50,7 +51,7 @@ export default class DataRenderer<T, O> {
         this.typeStateAttributeNode = typeStateAttributeNode;
 
         const eventHandler = (stateActionTypeMapping: Map<string, string>, event: Event) => {
-            const updateDataHandler = (prevData: T) => {
+            const updateDataHandler = (prevData: DataSource) => {
                 const {data, key, index} = this.dataGetter();
                 let action = {event: event, type: '', data: data, key: key, index};
                 action.type = stateActionTypeMapping.get(STATE_GLOBAL) || '';
@@ -68,7 +69,7 @@ export default class DataRenderer<T, O> {
             };
             this.updateData(updateDataHandler);
         };
-        typeStateAttributeNode.forEach(({typeStateAttribute, activeNode}) => attachEventListener(activeNode as HTMLElement, typeStateAttribute, eventHandler));
+        typeStateAttributeNode.forEach((tsa) => attachEventListener(tsa.activeNode as HTMLElement, tsa.typeStateAttribute, eventHandler));
     };
 }
 

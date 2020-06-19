@@ -5,8 +5,18 @@
     "preserveConstEnums": true,
     "sourceMap": true,
     "target": "ES6",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "lib": [
+      "DOM"
+    ]
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "**/*.spec.ts"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "**/*.spec.ts"
+  ]
 }
