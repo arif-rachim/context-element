@@ -20,3 +20,4 @@ export const DATA_TOGGLE_ATTRIBUTE = 'toggle';
 export const STATE_PROPERTY = '@state';
 export const STATE_GLOBAL = '*';
 export const IGNORE_DATA: any = "IGNORE_DATA";
+export const HIDE_CLASS: string = "data-element-hidden";

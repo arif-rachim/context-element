@@ -6,40 +6,26 @@
     <script src="src/index.ts"></script>
 </head>
 <body>
+
 <data-element id="data-element">
     <form submit.action="ADD_TODO">
         <input input.action="SET_TODO" name="todo" type="text" value.watch="todo">
         <button type="submit">Add Todo</button>
     </form>
-
-    <data-group data-key="id" data.watch="todos" reducer.watch="itemReducer" style="display: table">
-        <div style="display: table-row">
-            <div style="display: table-cell"><input checked.watch="done" input.action="TOGGLE_TODO" type="checkbox">
-            </div>
-            <div style="display: table-cell">
-                <div watch="todo"></div>
-            </div>
-            <div style="display: table-cell">
-                <button click.action="DELETE_TODO">Delete</button>
-            </div>
-        </div>
-    </data-group>
-
-    <!--
-    <table>
-        <tbody>
-        <data-group data-key="id" data.watch="todos" reducer.watch="itemReducer">
-            <tr>
-                <td><input checked.watch="done" input.action="TOGGLE_TODO" type="checkbox"></td>
-                <td content.watch="todo"></td>
-                <td>
+    <div>
+        <data-group data-key="id" data.watch="todos" reducer.watch="itemReducer" style="display: table">
+            <div style="display: table-row">
+                <div click.action="TOGGLE_TODO" style="display: table-cell"><input checked.watch="done" type="checkbox">
+                </div>
+                <div click.action="TOGGLE_TODO" style="display: table-cell">
+                    <div watch="todo"></div>
+                </div>
+                <div style="display: table-cell">
                     <button click.action="DELETE_TODO">Delete</button>
-                </td>
-            </tr>
+                </div>
+            </div>
         </data-group>
-        </tbody>
-    </table>
-    -->
+    </div>
 </data-element>
 </body>
 <script>
@@ -59,7 +45,11 @@
         }
         return [...array];
     };
-    dataElement.setData(() => ({todo: '', todos: [], itemReducer}));
+    dataElement.data = {
+        todo: '',
+        todos: [{todo: 'Todo One', id: 'Todo One'}, {todo: 'Todo Two', id: 'Todo Two'}],
+        itemReducer
+    };
     dataElement.reducer = (context, action) => {
         switch (action.type) {
             case 'SET_TODO' : {

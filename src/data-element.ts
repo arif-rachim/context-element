@@ -1,4 +1,4 @@
-import {composeChangeEventName, DataSetter, hasNoValue, hasValue, Reducer} from "./types";
+import {composeChangeEventName, DataSetter, hasNoValue, hasValue, HIDE_CLASS, Reducer} from "./types";
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import DataRenderer from "./libs/data-renderer";
 
@@ -36,10 +36,10 @@ export class DataElement<T, O> extends HTMLElement {
     connectedCallback() {
         this.initAttribute();
         if (hasNoValue(this.template)) {
-            this.setAttribute('style', 'display:none');
+            this.classList.add(HIDE_CLASS);
             const requestAnimationFrameCallback = () => {
                 this.populateTemplate();
-                this.removeAttribute('style');
+                this.classList.remove(HIDE_CLASS);
                 this.render();
                 if (hasValue(this.onMountedCallback)) {
                     this.onMountedCallback();

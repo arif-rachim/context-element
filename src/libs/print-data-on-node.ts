@@ -20,8 +20,6 @@ export default function printDataOnNode<Type>(element: HTMLElement, dictionary: 
                     const val = (data as any)[bindingAttribute];
                     if (isValidAttribute(attributeName, element.tagName)) {
                         element.setAttribute(attributeName, val);
-                    } else {
-                        console.warn(`attribute ${attributeName} is not valid attribute for ${element.tagName}`);
                     }
 
                     if (attributeName in element) {
