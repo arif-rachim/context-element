@@ -1,66 +1,70 @@
-import {DATA_KEY_ATTRIBUTE, FunctionReturnString, hasNoValue, Renderer} from "./types";
+import {DATA_KEY_ATTRIBUTE, hasNoValue, Renderer, ToString} from "./types";
 import createItemRenderer from "./libs/create-item-renderer";
 import {DataElement} from "./data-element";
+import {dataGroupMissingDataKey} from "./libs/error-message";
 
 export class DataGroup<Type> extends DataElement<Type[], Type> {
 
-    private dataKeySelector: FunctionReturnString<Type>;
+    private dataKeyPicker: ToString<Type>;
     private dataKeyField: string;
-    private renderers: Map<string, Renderer>;
+    private readonly renderers: Map<string, Renderer>;
 
     constructor() {
         super();
-        this.renderers = new Map<string, Renderer>();
-        this.dataKeySelector = (data: Type) => {
+        const defaultDataKeyPicker = (data: Type) => {
             if (hasNoValue(this.dataKeyField)) {
-                const errorMessage = `'<data-group>' requires 'data-key' attribute. Data-key value should refer to the unique attribute of the data.`;
-                throw new Error(errorMessage);
+                throw new Error(dataGroupMissingDataKey());
             }
             return (data as any)[this.dataKeyField];
         };
+        this.renderers = new Map<string, Renderer>();
+        this.dataKeyPicker = defaultDataKeyPicker;
         this.reducer = (data) => data;
     }
 
-    public setDataKeySelector = (selector: FunctionReturnString<Type>) => {
-        this.dataKeySelector = selector;
-    };
+    static get observedAttributes() {
+        return [DATA_KEY_ATTRIBUTE];
+    }
 
     protected initAttribute = () => {
         this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE);
     };
 
-    static get observedAttributes() {
-        return ['data-key'];
-    }
+    public setDataKeyPicker = (dataKeyPicker: ToString<Type>) => {
+        this.dataKeyPicker = dataKeyPicker;
+    };
 
     attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-        if (name === 'data-key') {
+        if (name === DATA_KEY_ATTRIBUTE) {
             this.dataKeyField = newValue;
         }
     }
 
     protected render = () => {
-        if (hasNoValue(this.dataProvider) || hasNoValue(this.template)) {
+        const dataSource: Type[] = this.dataSource;
+        const template: ChildNode[] = this.template;
+        const renderers: Map<string, Renderer> = this.renderers;
+        if (hasNoValue(dataSource) || hasNoValue(template)) {
             return;
         }
         this.removeExpiredData();
-        let lastNode: Node = document.createElement('template');
-        this.append(lastNode);
-        const dpLength = this.dataProvider.length - 1;
-        [...this.dataProvider].reverse().forEach((data, index) => {
-            const dataKey = this.dataKeySelector(data);
-            if (!this.renderers.has(dataKey)) {
-                const dataNode = this.template.map(node => node.cloneNode(true));
-                const itemRenderer = createItemRenderer(dataNode, this.updateContextCallback, this.reducer);
-                this.renderers.set(dataKey, itemRenderer);
+        let anchorNode: Node = document.createElement('template');
+        this.append(anchorNode);
+        const dpLength = dataSource.length - 1;
+        [...dataSource].reverse().forEach((data, index) => {
+            const dataKey = this.dataKeyPicker(data);
+            if (!renderers.has(dataKey)) {
+                const dataNode: ChildNode[] = template.map(node => node.cloneNode(true)) as ChildNode[];
+                const itemRenderer = createItemRenderer(dataNode, this.updateDataCallback, this.reducer);
+                renderers.set(dataKey, itemRenderer);
             }
-            const itemRenderer = this.renderers.get(dataKey);
-            const reversedDataNodes = [...itemRenderer.dataNode].reverse();
-            for (const node of reversedDataNodes) {
-                if (lastNode.previousSibling !== node) {
-                    this.insertBefore(node, lastNode);
+            const itemRenderer = renderers.get(dataKey);
+            const reversedNodes = [...itemRenderer.nodes].reverse();
+            for (const node of reversedNodes) {
+                if (anchorNode.previousSibling !== node) {
+                    this.insertBefore(node, anchorNode);
                 }
-                lastNode = node;
+                anchorNode = node;
             }
             const dataGetter = () => ({data, key: dataKey, index: (dpLength - index)});
             itemRenderer.render(dataGetter);
@@ -69,12 +73,16 @@ export class DataGroup<Type> extends DataElement<Type[], Type> {
     };
 
     private removeExpiredData = () => {
-        const newKeys = this.dataProvider.map(data => this.dataKeySelector(data));
-        const oldKeys = Array.from(this.renderers.keys());
-        const removedKeys = oldKeys.filter(key => newKeys.indexOf(key) < 0);
-        removedKeys.forEach(key => {
-            this.renderers.get(key).dataNode.forEach(node => (node as ChildNode).remove());
-            this.renderers.delete(key);
+        const renderers: Map<string, Renderer> = this.renderers;
+        const dataSource: Type[] = this.dataSource;
+
+        const dataSourceKeys = dataSource.map(data => this.dataKeyPicker(data));
+        const prevKeys = Array.from(renderers.keys());
+        const discardedKeys = prevKeys.filter(key => dataSourceKeys.indexOf(key) < 0);
+        discardedKeys.forEach(discardedKey => {
+            const discardNode = (node: ChildNode) => node.remove();
+            renderers.get(discardedKey).nodes.forEach(discardNode);
+            renderers.delete(discardedKey);
         });
     };
 }

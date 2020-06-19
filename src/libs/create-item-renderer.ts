@@ -18,11 +18,11 @@ import noEmptyTextNode from "./no-empty-text-node";
 import {DataGroup} from "../data-group";
 import {DataElement} from "../data-element";
 
-export default function createItemRenderer<ReducerType, Output>(dataNode: Array<Node>, updateContextCallback: any, reducer: Reducer<ReducerType, Output>): Renderer {
+export default function createItemRenderer<ReducerType, Output>(nodes: ChildNode[], updateContextCallback: any, reducer: Reducer<ReducerType, Output>): Renderer {
 
     let dataGetter: DataGetter<Output>;
     const activeAttributes = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE];
-    const activeNodes = Array.from(findNodesThatHaveAttributes(activeAttributes, dataNode));
+    const activeNodes = Array.from(findNodesThatHaveAttributes(activeAttributes, nodes));
     const nodesDictionary = activeNodes.map(node => ({dictionary: toDictionaries(node as HTMLElement), node}));
 
     const onActionCallback = (stateActionTypeMapping: Map<string, string>, event: Event) => {
@@ -52,13 +52,12 @@ export default function createItemRenderer<ReducerType, Output>(dataNode: Array<
             const {data} = getter();
             nodesDictionary.forEach(({dictionary, node}) => printDataOnNode(node as HTMLElement, dictionary, data));
         },
-        dataNode
+        nodes: nodes
     };
 }
 
 
 function toDictionaries(element: HTMLElement): TripleMap<string> {
-
     const attributesToWatch = element.getAttributeNames().filter(name => {
         return (name.indexOf(DATA_WATCH_ATTRIBUTE) >= 0) || (name.indexOf(DATA_TOGGLE_ATTRIBUTE) >= 0) || (name.indexOf(DATA_ACTION_ATTRIBUTE) >= 0);
     });
@@ -100,13 +99,12 @@ function toDictionaries(element: HTMLElement): TripleMap<string> {
     }, new Map<string, Map<string, Map<string, string>>>());
 }
 
-const findNodesThatHaveAttributes = (attributesSuffix: Array<string>, childNodes: Array<Node>) => {
-    return Array.from(childNodes).filter(noEmptyTextNode()).reduce((accumulator, childNode) => {
-        if (!(childNode instanceof HTMLElement)) {
+const findNodesThatHaveAttributes = (attributesSuffix: string[], nodes: ChildNode[]) => {
+    return nodes.filter(noEmptyTextNode()).reduce((accumulator, node) => {
+        if (!(node instanceof HTMLElement)) {
             return accumulator;
         }
-        const element = childNode as HTMLElement;
-
+        const element = node as HTMLElement;
         const attributeNames = element.getAttributeNames();
         for (const attribute of attributeNames) {
             for (const attributeSuffix of attributesSuffix) {

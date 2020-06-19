@@ -1,12 +1,12 @@
-import {getChangeEventName, hasNoValue, Reducer, Renderer, SetData} from "./types";
+import {composeChangeEventName, DataSetter, hasNoValue, hasValue, Reducer, Renderer} from "./types";
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import createItemRenderer from "./libs/create-item-renderer";
 
 export class DataElement<Type, Output> extends HTMLElement {
     public reducer: Reducer<Type, Output>;
-    protected template: Node[];
+    protected template: ChildNode[];
     protected renderer: Renderer;
-    protected dataProvider: Type;
+    protected dataSource: Type;
     protected onMountedCallback: () => void;
 
     constructor() {
@@ -17,20 +17,20 @@ export class DataElement<Type, Output> extends HTMLElement {
     }
 
     get data(): Type {
-        return this.dataProvider;
+        return this.dataSource;
     }
 
     set data(value: Type) {
         this.setData(() => value);
     }
 
-    public setData = (context: SetData<Type>) => {
-        this.dataProvider = context(this.dataProvider);
+    public setData = (context: DataSetter<Type>) => {
+        this.dataSource = context(this.dataSource);
         this.render();
     };
 
-    public onMounted = (onMountedCallback: () => void) => {
-        this.onMountedCallback = onMountedCallback;
+    public onMounted = (onMountedListener: () => void) => {
+        this.onMountedCallback = onMountedListener;
     };
 
     connectedCallback() {
@@ -41,7 +41,7 @@ export class DataElement<Type, Output> extends HTMLElement {
                 this.populateTemplate();
                 this.removeAttribute('style');
                 this.render();
-                if (this.onMountedCallback) {
+                if (hasValue(this.onMountedCallback)) {
                     this.onMountedCallback();
                     this.onMountedCallback = null;
                 }
@@ -55,32 +55,32 @@ export class DataElement<Type, Output> extends HTMLElement {
         this.innerHTML = ''; // we cleanup the innerHTML
     };
 
-    protected updateContextCallback = (value: SetData<Type>) => {
+    protected updateDataCallback = (value: DataSetter<Type>) => {
         this.setData(value);
-        const dataChangedEvent = getChangeEventName('data');
+        const dataChangedEvent: string = composeChangeEventName('data');
         if (dataChangedEvent in this) {
-            (this as any)[dataChangedEvent].call(this, this.dataProvider);
+            (this as any)[dataChangedEvent].call(this, this.dataSource);
         }
     };
 
     protected render = () => {
-        if (hasNoValue(this.dataProvider) || hasNoValue(this.template)) {
+        if (hasNoValue(this.dataSource) || hasNoValue(this.template)) {
             return;
         }
-        let lastNode: Node = document.createElement('template');
-        this.append(lastNode);
         if (hasNoValue(this.renderer)) {
-            const dataNode = this.template.map(node => node.cloneNode(true));
-            this.renderer = createItemRenderer(dataNode, this.updateContextCallback, this.reducer);
+            const dataNodes: ChildNode[] = this.template.map(node => node.cloneNode(true)) as ChildNode[];
+            this.renderer = createItemRenderer(dataNodes, this.updateDataCallback, this.reducer);
         }
-        const reversedDataNodes = [...this.renderer.dataNode].reverse();
-        for (const node of reversedDataNodes) {
-            if (lastNode.previousSibling !== node) {
-                this.insertBefore(node, lastNode);
+        const reversedNodes: Node[] = [...this.renderer.nodes].reverse();
+        let anchorNode: Node = document.createElement('template');
+        this.append(anchorNode);
+        for (const node of reversedNodes) {
+            if (anchorNode.previousSibling !== node) {
+                this.insertBefore(node, anchorNode);
             }
-            lastNode = node;
+            anchorNode = node;
         }
-        const dataGetter = () => ({data: this.dataProvider});
+        const dataGetter = () => ({data: this.dataSource});
         this.renderer.render(dataGetter);
         this.lastChild.remove();
     };

@@ -1,8 +1,8 @@
 import {
+    composeChangeEventName,
     DATA_TOGGLE_ATTRIBUTE,
     DATA_WATCH_ATTRIBUTE,
     DoubleMap,
-    getChangeEventName,
     STATE_GLOBAL,
     STATE_PROPERTY,
     TripleMap
@@ -26,7 +26,7 @@ export default function printDataOnNode<Type>(element: HTMLElement, dictionary: 
 
                     if (attributeName in element) {
                         (element as any)[attributeName] = val;
-                        const eventName = getChangeEventName(attributeName);
+                        const eventName = composeChangeEventName(attributeName);
                         (element as any)[eventName] = (val: any) => (data as any)[bindingAttribute] = val;
                     }
                     if (attributeName === 'content') {

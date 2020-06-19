@@ -27,7 +27,7 @@ test('It should create an element of DataGroup', () => {
 });
 
 
-test('It should throw error when setting dataProvider without keySelector', (done) => {
+test('It should throw error when setting dataSource without keySelector', (done) => {
     const dataGroup = createDataGroup(`<div watch="name"></div>`);
     const users = generateRandomUser(10);
     dataGroup.onMounted(() => {
@@ -39,10 +39,10 @@ test('It should throw error when setting dataProvider without keySelector', (don
 
 });
 
-test('It should render the childNodes and validate the length based on dataProvider', (done) => {
+test('It should render the childNodes and validate the length based on dataSource', (done) => {
     const dataGroup = createDataGroup(`<div watch="name"></div>`);
     const users = generateRandomUser(10);
-    dataGroup.setDataKeySelector((data) => data.userId);
+    dataGroup.setDataKeyPicker((data) => data.userId);
     dataGroup.setData(() => users);
     dataGroup.onMounted(() => {
         expect(dataGroup.childNodes.length).toBe(10);
@@ -53,7 +53,7 @@ test('It should render the childNodes and validate the length based on dataProvi
 test('It should perform remove', (done) => {
     const dataGroup = createDataGroup(`<div watch="name"></div>`);
     const users = generateRandomUser(10);
-    dataGroup.setDataKeySelector((data) => data.userId);
+    dataGroup.setDataKeyPicker((data) => data.userId);
     dataGroup.setData(() => users);
     dataGroup.onMounted(() => {
         expect(dataGroup.childNodes.length).toBe(10);
@@ -69,7 +69,7 @@ test('it should render `watch` according to the state', (done) => {
     const dataGroup = createDataGroup(`<div content.watch="fullName" 
                                                       content.state-one.watch="firstName"
                                                       content.state-two.watch="lastName"></div>`);
-    dataGroup.setDataKeySelector((data) => data.userId);
+    dataGroup.setDataKeyPicker((data) => data.userId);
     const dataProvider = Array.from({length: 20}).map(() => {
         const firstName = faker.name.firstName();
         const lastName = faker.name.lastName();
