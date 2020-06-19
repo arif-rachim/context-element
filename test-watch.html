@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="src/index.ts"></script>
+</head>
+<body>
+<data-group data-key="id" id="data-group">
+    <div content.disabled.watch="kuda" content.enabled.watch="sapi" content.watch="bebek"></div>
+    <div>
+        <button click.action="SET_STATE_EMPTY">Bebek</button>
+        <button click.action="SET_STATE_ENABLED">Sapi</button>
+        <button click.action="SET_STATE_DISABLED">Kuda</button>
+        <button click.action="SET_STATE_KODOK">Kodok</button>
+    </div>
+</data-group>
+</body>
+<script>
+    const dataElement = document.getElementById('data-group');
+    dataElement.data = [
+        {
+            bebek: 'bebek',
+            sapi: 'sapi',
+            kuda: 'kuda',
+            id: '1'
+        }
+
+    ];
+    dataElement.reducer = (state, action) => {
+
+        switch (action.type) {
+            case 'SET_STATE_EMPTY' : {
+                delete action.data['@state'];
+                return state;
+            }
+            case 'SET_STATE_ENABLED' : {
+                action.data['@state'] = 'enabled';
+                return state;
+            }
+            case 'SET_STATE_DISABLED' : {
+                action.data['@state'] = 'disabled';
+                return state;
+            }
+            case 'SET_STATE_KODOK' : {
+                action.data['@state'] = 'kodok';
+                return state;
+            }
+        }
+        return state;
+    }
+
+</script>
+</html>

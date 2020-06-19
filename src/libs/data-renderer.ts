@@ -3,22 +3,13 @@ import {
     DATA_TOGGLE_ATTRIBUTE,
     DATA_WATCH_ATTRIBUTE,
     DataGetter,
-    DataGetterValue,
-    hasNoValue,
-    IGNORE_DATA,
     Reducer,
-    STATE_GLOBAL,
-    STATE_PROPERTY,
-    TypeStateAttribute,
     UpdateDataCallback,
 } from "../types";
-
-import attachEventListener from "./attach-event-listener";
-import renderDataOnNode from "./render-data-on-node";
 import noEmptyTextNode from "./no-empty-text-node";
 import {DataGroup} from "../data-group";
 import {DataElement} from "../data-element";
-import {createTypeStateAttribute} from "./type-state-attribute";
+import AttributeEvaluator from "./attribute-evaluator";
 
 export default class DataRenderer<DataSource, Item> {
 
@@ -26,51 +17,24 @@ export default class DataRenderer<DataSource, Item> {
     private readonly updateData: UpdateDataCallback<DataSource>;
     private readonly reducer: Reducer<DataSource, Item>;
     private dataGetter: DataGetter<Item>;
-    private typeStateAttributeNode: TypeStateAttribute[];
+    private readonly attributeEvaluators: AttributeEvaluator<DataSource, Item>[];
 
     constructor(nodes: ChildNode[], updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource, Item>) {
         this.nodes = nodes;
         this.updateData = updateData;
         this.reducer = reducer;
-        this.init();
+
+        const activeAttributes: (string)[] = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE];
+        const activeNodes: ChildNode[] = Array.from(activeNodesLookup(activeAttributes, this.nodes));
+        const dataGetter = () => this.dataGetter();
+        this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, dataGetter, this.updateData, this.reducer));
     }
 
     public render = (getter: DataGetter<Item>) => {
         this.dataGetter = getter;
-        const dataGetterValue: DataGetterValue<Item> = getter();
-        this.typeStateAttributeNode.forEach((tsa) => renderDataOnNode(tsa.activeNode as HTMLElement, tsa.typeStateAttribute, dataGetterValue.data));
+        this.attributeEvaluators.forEach((attributeEvaluator: AttributeEvaluator<DataSource, Item>) => attributeEvaluator.render());
     };
 
-    private init = () => {
-        const activeAttributes: (string)[] = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE];
-        const activeNodes: ChildNode[] = Array.from(activeNodesLookup(activeAttributes, this.nodes));
-        const typeStateAttributeNode: TypeStateAttribute[] = activeNodes.map(activeNode => ({
-            typeStateAttribute: createTypeStateAttribute(activeNode as HTMLElement),
-            activeNode
-        }));
-        this.typeStateAttributeNode = typeStateAttributeNode;
-
-        const eventHandler = (stateActionTypeMapping: Map<string, string>, event: Event) => {
-            const updateDataHandler = (prevData: DataSource) => {
-                const {data, key, index} = this.dataGetter();
-                let action = {event: event, type: '', data: data, key: key, index};
-                action.type = stateActionTypeMapping.get(STATE_GLOBAL) || '';
-                action.type = stateActionTypeMapping.get((data as any)[STATE_PROPERTY]) || action.type;
-
-                if (hasNoValue(key)) {
-                    delete action.key;
-                    delete action.data;
-                    delete action.index;
-                }
-                if (action.type) {
-                    return this.reducer(prevData, action);
-                }
-                return IGNORE_DATA;
-            };
-            this.updateData(updateDataHandler);
-        };
-        typeStateAttributeNode.forEach((tsa) => attachEventListener(tsa.activeNode as HTMLElement, tsa.typeStateAttribute, eventHandler));
-    };
 }
 
 const activeNodesLookup = (attributesSuffix: string[], nodes: ChildNode[]) => {
