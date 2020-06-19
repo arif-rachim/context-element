@@ -8,20 +8,21 @@
 <body>
 
 <data-element id="data-element">
-    <form submit.action="ADD_TODO">
-        <input input.action="SET_TODO" name="todo" type="text" value.watch="todo">
+    <form onsubmit.action="ADD_TODO">
+        <input name="todo" oninput.action="SET_TODO" type="text" value.watch="todo">
         <button type="submit">Add Todo</button>
     </form>
     <div>
         <data-group data-key="id" data.watch="todos" reducer.watch="itemReducer" style="display: table">
-            <div style="display: table-row">
-                <div click.action="TOGGLE_TODO" style="display: table-cell"><input checked.watch="done" type="checkbox">
+            <div onclick="" onmouseleave="" style="display: table-row">
+                <div onclick.action="TOGGLE_TODO" style="display: table-cell"><input checked.watch="done"
+                                                                                     type="checkbox">
                 </div>
-                <div click.action="TOGGLE_TODO" style="display: table-cell">
+                <div onclick.action="TOGGLE_TODO" style="display: table-cell">
                     <div watch="todo"></div>
                 </div>
                 <div style="display: table-cell">
-                    <button click.action="DELETE_TODO">Delete</button>
+                    <button onclick.action="DELETE_TODO">Delete</button>
                 </div>
             </div>
         </data-group>

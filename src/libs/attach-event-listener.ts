@@ -34,7 +34,8 @@ export default function attachEventListener(element: HTMLElement, typeStateAttri
                     furnishDomEvent(event);
                     eventHandler(stateMapping, event);
                 };
-                element.addEventListener(attribute, onEventHandler);
+                const eventName = attribute.startsWith('on') ? attribute.substring('on'.length, attribute.length) : attribute;
+                element.addEventListener(eventName, onEventHandler);
             });
         }
     });

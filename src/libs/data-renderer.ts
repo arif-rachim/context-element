@@ -14,7 +14,7 @@ import {
 } from "../types";
 
 import attachEventListener from "./attach-event-listener";
-import printDataOnNode from "./print-data-on-node";
+import renderDataOnNode from "./render-data-on-node";
 import noEmptyTextNode from "./no-empty-text-node";
 import {DataGroup} from "../data-group";
 import {DataElement} from "../data-element";
@@ -38,7 +38,7 @@ export default class DataRenderer<DataSource, Item> {
     public render = (getter: DataGetter<Item>) => {
         this.dataGetter = getter;
         const dataGetterValue: DataGetterValue<Item> = getter();
-        this.typeStateAttributeNode.forEach((tsa) => printDataOnNode(tsa.activeNode as HTMLElement, tsa.typeStateAttribute, dataGetterValue.data));
+        this.typeStateAttributeNode.forEach((tsa) => renderDataOnNode(tsa.activeNode as HTMLElement, tsa.typeStateAttribute, dataGetterValue.data));
     };
 
     private init = () => {

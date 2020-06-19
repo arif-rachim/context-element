@@ -5,9 +5,8 @@ import {terser} from "rollup-plugin-terser";
 export default {
     input: 'src/index.ts',
     output: {
-        dir: 'output',
+        dir: 'dist',
         format: 'iife'
     },
     plugins: [typescript(), terser()]
 };
-//{lib: ["es5", "es6", "dom"], target: "es6"}
