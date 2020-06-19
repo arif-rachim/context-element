@@ -1,17 +1,17 @@
 import {DATA_KEY_ATTRIBUTE, hasNoValue, Renderer, ToString} from "./types";
-import createItemRenderer from "./libs/create-item-renderer";
 import {DataElement} from "./data-element";
 import {dataGroupMissingDataKey} from "./libs/error-message";
+import DataRenderer from "./libs/data-renderer";
 
-export class DataGroup<Type> extends DataElement<Type[], Type> {
+export class DataGroup<T> extends DataElement<T[], T> {
 
-    private dataKeyPicker: ToString<Type>;
+    private dataKeyPicker: ToString<T>;
     private dataKeyField: string;
     private readonly renderers: Map<string, Renderer>;
 
     constructor() {
         super();
-        const defaultDataKeyPicker = (data: Type) => {
+        const defaultDataKeyPicker = (data: T) => {
             if (hasNoValue(this.dataKeyField)) {
                 throw new Error(dataGroupMissingDataKey());
             }
@@ -26,11 +26,7 @@ export class DataGroup<Type> extends DataElement<Type[], Type> {
         return [DATA_KEY_ATTRIBUTE];
     }
 
-    protected initAttribute = () => {
-        this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE);
-    };
-
-    public setDataKeyPicker = (dataKeyPicker: ToString<Type>) => {
+    public setDataKeyPicker = (dataKeyPicker: ToString<T>) => {
         this.dataKeyPicker = dataKeyPicker;
     };
 
@@ -40,8 +36,12 @@ export class DataGroup<Type> extends DataElement<Type[], Type> {
         }
     }
 
+    protected initAttribute = () => {
+        this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE);
+    };
+
     protected render = () => {
-        const dataSource: Type[] = this.dataSource;
+        const dataSource: T[] = this.dataSource;
         const template: ChildNode[] = this.template;
         const renderers: Map<string, Renderer> = this.renderers;
         if (hasNoValue(dataSource) || hasNoValue(template)) {
@@ -55,7 +55,7 @@ export class DataGroup<Type> extends DataElement<Type[], Type> {
             const dataKey = this.dataKeyPicker(data);
             if (!renderers.has(dataKey)) {
                 const dataNode: ChildNode[] = template.map(node => node.cloneNode(true)) as ChildNode[];
-                const itemRenderer = createItemRenderer(dataNode, this.updateDataCallback, this.reducer);
+                const itemRenderer = new DataRenderer(dataNode, this.updateDataCallback, this.reducer);
                 renderers.set(dataKey, itemRenderer);
             }
             const itemRenderer = renderers.get(dataKey);
@@ -74,7 +74,7 @@ export class DataGroup<Type> extends DataElement<Type[], Type> {
 
     private removeExpiredData = () => {
         const renderers: Map<string, Renderer> = this.renderers;
-        const dataSource: Type[] = this.dataSource;
+        const dataSource: T[] = this.dataSource;
 
         const dataSourceKeys = dataSource.map(data => this.dataKeyPicker(data));
         const prevKeys = Array.from(renderers.keys());

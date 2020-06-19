@@ -7,16 +7,39 @@
 </head>
 <body>
 <data-element id="data-element">
-    <input input.action="SET_TODO" name="todo" type="text" value.watch="todo">
-    <button click.action="ADD_TODO">Add Todo</button>
-    <data-group data-key="id" data.watch="todos" reducer.watch="itemReducer">
-        <div>
-            <label>
-                <input checked.watch="done" input.action="TOGGLE_TODO" type="checkbox">
-                <span content.watch="todo"></span>
-            </label>
+    <form submit.action="ADD_TODO">
+        <input input.action="SET_TODO" name="todo" type="text" value.watch="todo">
+        <button type="submit">Add Todo</button>
+    </form>
+
+    <data-group data-key="id" data.watch="todos" reducer.watch="itemReducer" style="display: table">
+        <div style="display: table-row">
+            <div style="display: table-cell"><input checked.watch="done" input.action="TOGGLE_TODO" type="checkbox">
+            </div>
+            <div style="display: table-cell">
+                <div watch="todo"></div>
+            </div>
+            <div style="display: table-cell">
+                <button click.action="DELETE_TODO">Delete</button>
+            </div>
         </div>
     </data-group>
+
+    <!--
+    <table>
+        <tbody>
+        <data-group data-key="id" data.watch="todos" reducer.watch="itemReducer">
+            <tr>
+                <td><input checked.watch="done" input.action="TOGGLE_TODO" type="checkbox"></td>
+                <td content.watch="todo"></td>
+                <td>
+                    <button click.action="DELETE_TODO">Delete</button>
+                </td>
+            </tr>
+        </data-group>
+        </tbody>
+    </table>
+    -->
 </data-element>
 </body>
 <script>

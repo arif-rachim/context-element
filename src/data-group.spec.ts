@@ -127,5 +127,3 @@ test('It should bind event against node', (done) => {
         done();
     });
 });
-
-

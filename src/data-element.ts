@@ -1,12 +1,12 @@
-import {composeChangeEventName, DataSetter, hasNoValue, hasValue, Reducer, Renderer} from "./types";
+import {composeChangeEventName, DataSetter, hasNoValue, hasValue, Reducer} from "./types";
 import noEmptyTextNode from "./libs/no-empty-text-node";
-import createItemRenderer from "./libs/create-item-renderer";
+import DataRenderer from "./libs/data-renderer";
 
-export class DataElement<Type, Output> extends HTMLElement {
-    public reducer: Reducer<Type, Output>;
+export class DataElement<T, O> extends HTMLElement {
+    public reducer: Reducer<T, O>;
     protected template: ChildNode[];
-    protected renderer: Renderer;
-    protected dataSource: Type;
+    protected renderer: DataRenderer<T, O>;
+    protected dataSource: T;
     protected onMountedCallback: () => void;
 
     constructor() {
@@ -16,15 +16,15 @@ export class DataElement<Type, Output> extends HTMLElement {
         this.reducer = (data) => data;
     }
 
-    get data(): Type {
+    get data(): T {
         return this.dataSource;
     }
 
-    set data(value: Type) {
+    set data(value: T) {
         this.setData(() => value);
     }
 
-    public setData = (context: DataSetter<Type>) => {
+    public setData = (context: DataSetter<T>) => {
         this.dataSource = context(this.dataSource);
         this.render();
     };
@@ -50,13 +50,8 @@ export class DataElement<Type, Output> extends HTMLElement {
         }
     }
 
-    private populateTemplate = () => {
-        this.template = Array.from(this.childNodes).filter(noEmptyTextNode());
-        this.innerHTML = ''; // we cleanup the innerHTML
-    };
-
-    protected updateDataCallback = (value: DataSetter<Type>) => {
-        this.setData(value);
+    protected updateDataCallback = (dataSetter: DataSetter<T>) => {
+        this.setData(dataSetter);
         const dataChangedEvent: string = composeChangeEventName('data');
         if (dataChangedEvent in this) {
             (this as any)[dataChangedEvent].call(this, this.dataSource);
@@ -69,7 +64,7 @@ export class DataElement<Type, Output> extends HTMLElement {
         }
         if (hasNoValue(this.renderer)) {
             const dataNodes: ChildNode[] = this.template.map(node => node.cloneNode(true)) as ChildNode[];
-            this.renderer = createItemRenderer(dataNodes, this.updateDataCallback, this.reducer);
+            this.renderer = new DataRenderer(dataNodes, this.updateDataCallback, this.reducer);
         }
         const reversedNodes: Node[] = [...this.renderer.nodes].reverse();
         let anchorNode: Node = document.createElement('template');
@@ -87,6 +82,11 @@ export class DataElement<Type, Output> extends HTMLElement {
 
     protected initAttribute = () => {
         // we are nt implementing here
+    };
+
+    private populateTemplate = () => {
+        this.template = Array.from(this.childNodes).filter(noEmptyTextNode());
+        this.innerHTML = ''; // we cleanup the innerHTML
     };
 }
 
