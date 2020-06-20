@@ -1,5 +1,5 @@
 {
-  "name": "data-group",
+  "name": "context-element",
   "version": "1.0.0",
   "description": "HTMLElement makes it easy for you to create web pages that can display data dynamically",
   "main": "index.js",
