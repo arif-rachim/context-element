@@ -2,6 +2,7 @@ import {ArrayContextElement} from './array-context-element';
 import './index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
+import {STATE_PROPERTY} from "./types";
 
 const createArrayContextElement = (innerHTML?: string) => {
     const randomId = uuid();
@@ -89,17 +90,17 @@ test('it should render `watch` according to the state', (done) => {
         const usersFullName = dataProvider.map(data => data.fullName);
         expect(contentOnDefaultState).toEqual(usersFullName);
         arrayContextElement.setData((old) => {
-            return old.map(data => ({...data, ['@state']: 'state-one'}));
+            return old.map(data => ({...data, [STATE_PROPERTY]: 'state-one'}));
         });
         const contentOnStateOne = Array.from(arrayContextElement.childNodes).map(node => (node as HTMLElement).innerHTML);
         expect(contentOnStateOne).toEqual(dataProvider.map(data => data.firstName));
         arrayContextElement.setData((old) => {
-            return old.map(data => ({...data, ['@state']: 'state-two'}));
+            return old.map(data => ({...data, [STATE_PROPERTY]: 'state-two'}));
         });
         const contentOnStateTwo = Array.from(arrayContextElement.childNodes).map(node => (node as HTMLElement).innerHTML);
         expect(contentOnStateTwo).toEqual(dataProvider.map(data => data.lastName));
         arrayContextElement.setData((old) => {
-            return old.map(data => ({...data, ['@state']: 'state-three'}));
+            return old.map(data => ({...data, [STATE_PROPERTY]: 'state-three'}));
         });
         const contentOnStateThree = Array.from(arrayContextElement.childNodes).map(node => (node as HTMLElement).innerHTML);
         expect(contentOnStateThree).toEqual(dataProvider.map(data => data.fullName));
@@ -107,7 +108,7 @@ test('it should render `watch` according to the state', (done) => {
         arrayContextElement.setData((old) => {
             return old.map(data => {
                 const newData = ({...data});
-                delete newData['@state'];
+                delete newData[STATE_PROPERTY];
                 return data;
             });
         });
@@ -142,12 +143,12 @@ test('It should update the data when click event triggered',(done) => {
         const data = action.data;
         switch (action.type) {
             case 'SET_SIMPLE' : {
-                data['@state'] = 'simple';
+                data[STATE_PROPERTY] = 'simple';
                 return [...context];
 
             }
             case 'SET_COMPLETE' : {
-                data['@state'] = 'complete';
+                data[STATE_PROPERTY] = 'complete';
                 return [...context];
 
             }
@@ -177,15 +178,15 @@ test('It should toggle when user change the data',(done)=>{
     arrayContextElement.reducer = (context,action) => {
         switch (action.type) {
             case 'SET_ONE' : {
-                action.data['@state'] = 'one';
+                action.data[STATE_PROPERTY] = 'one';
                 break;
             }
             case 'SET_TWO' : {
-                action.data['@state'] = 'two';
+                action.data[STATE_PROPERTY] = 'two';
                 break;
             }
             case 'SET_NONE' : {
-                delete action.data['@state'];
+                delete action.data[STATE_PROPERTY];
                 break;
             }
         }
