@@ -2,7 +2,7 @@ import {composeChangeEventName, DataSetter, hasNoValue, hasValue, HIDE_CLASS, Re
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import DataRenderer from "./libs/data-renderer";
 
-export class DataElement<DataSource, Item> extends HTMLElement {
+export class ContextElement<DataSource, Item> extends HTMLElement {
     public reducer: Reducer<DataSource, Item>;
     protected template: ChildNode[];
     protected renderer: DataRenderer<DataSource, Item>;

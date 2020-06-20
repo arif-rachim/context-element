@@ -2,8 +2,6 @@ export type Reducer<T, O> = (data: T, action: Action<O>) => T
 export type Action<O> = { type: string, data: O, key: string, event: Event, index: number };
 export type Renderer = { render: (dataGetter: () => any) => void, nodes: ChildNode[] };
 export type DataSetter<O> = (oldData: O) => O;
-export type DoubleMap<O> = Map<O, Map<O, O>>;
-export type TripleMap<O> = Map<O, DoubleMap<O>>;
 export type ToString<O> = (data: O) => string;
 export type DataGetter<O> = () => DataGetterValue<O>;
 export type DataGetterValue<O> = { key?: string, data: O, index?: number };

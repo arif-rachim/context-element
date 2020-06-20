@@ -48,7 +48,7 @@ const activeNodesLookup = (attributesSuffix: string[], nodes: ChildNode[]) => {
                 accumulator.add(element);
             }
         }
-        if (!contains(element.tagName, ['DATA-GROUP', 'DATA-ELEMENT'])) {
+        if (!contains(element.tagName, ['CONTEXT-ARRAY', 'CONTEXT-ELEMENT'])) {
             const childrenNodes = activeNodesLookup(attributesSuffix, Array.from(element.childNodes));
             Array.from(childrenNodes).forEach(childNode => accumulator.add(childNode));
         }

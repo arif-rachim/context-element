@@ -1,9 +1,9 @@
 import {DATA_KEY_ATTRIBUTE, hasNoValue, Renderer, ToString} from "./types";
-import {DataElement} from "./data-element";
-import {dataGroupMissingDataKey} from "./libs/error-message";
+import {ContextElement} from "./context-element";
+import {contextArrayMissingDataKey} from "./libs/error-message";
 import DataRenderer from "./libs/data-renderer";
 
-export class DataGroup<Item> extends DataElement<Item[], Item> {
+export class ContextArray<Item> extends ContextElement<Item[], Item> {
 
     private dataKeyPicker: ToString<Item>;
     private dataKeyField: string;
@@ -13,7 +13,7 @@ export class DataGroup<Item> extends DataElement<Item[], Item> {
         super();
         const defaultDataKeyPicker = (data: Item) => {
             if (hasNoValue(this.dataKeyField)) {
-                throw new Error(dataGroupMissingDataKey());
+                throw new Error(contextArrayMissingDataKey());
             }
             return (data as any)[this.dataKeyField];
         };

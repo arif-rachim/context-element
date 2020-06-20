@@ -5,10 +5,10 @@
     <script src="src/index.ts"></script>
 </head>
 <body>
-<data-group data-key="name" id="data-group">
+<context-array data-key="name" id="data-group">
     <div watch="name"></div>
-    <data-group data-key="name" id="data-group2"></data-group>
-</data-group>
+    <context-array data-key="name" id="data-group2"></context-array>
+</context-array>
 </body>
 <script>
     document.getElementById('data-group').data = [{name: "example"}]
