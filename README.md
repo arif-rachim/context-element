@@ -1,7 +1,7 @@
 # _context-element_
-**_`context-element`_** is an HTMLElement that makes it easy for you to create web pages that can render data dynamically in the browser.
+**_`context-element`_** is an HTMLElement that makes it easy to render data or array in html page.
 
-**_`context-element`_** is a very small (3kb gzip). It can render an array of data efficiently and quickly. You can directly use **_`context-element`_** on the html page by supplying `arrays` to the attribute `data` into the **_`context-element`_** element. You can determine how the data will be displayed by creating a template inside the **_`context-element`_**.
+**_`context-element`_** is a very small (3kb gzip). It can render an array of data efficiently and quickly. You can directly use **_`context-element`_** on the html page by supplying `arrays or object` to the attribute `data` into the **_`context-element`_** element. You can determine how the data will be displayed by creating a template inside the **_`context-element`_**.
 
 ## Motivation
 To build interactive html pages and display data dynamically, we can use a front-end `framework/library` that has an engine to detect data changes and render these pages in a browser efficiently.

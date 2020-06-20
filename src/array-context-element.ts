@@ -1,9 +1,9 @@
 import {DATA_KEY_ATTRIBUTE, hasNoValue, Renderer, ToString} from "./types";
 import {ContextElement} from "./context-element";
-import {contextArrayMissingDataKey} from "./libs/error-message";
+import {arrayContextElementMissingDataKey} from "./libs/error-message";
 import DataRenderer from "./libs/data-renderer";
 
-export class ContextArray<Item> extends ContextElement<Item[], Item> {
+export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
 
     private dataKeyPicker: ToString<Item>;
     private dataKeyField: string;
@@ -13,7 +13,7 @@ export class ContextArray<Item> extends ContextElement<Item[], Item> {
         super();
         const defaultDataKeyPicker = (data: Item) => {
             if (hasNoValue(this.dataKeyField)) {
-                throw new Error(contextArrayMissingDataKey());
+                throw new Error(arrayContextElementMissingDataKey());
             }
             return (data as any)[this.dataKeyField];
         };
@@ -27,7 +27,6 @@ export class ContextArray<Item> extends ContextElement<Item[], Item> {
     }
 
     public setDataKeyPicker = (dataKeyPicker: ToString<Item>) => {
-
         this.dataKeyPicker = dataKeyPicker;
     };
 
