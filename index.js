@@ -23,12 +23,11 @@
     }
 
     const ignoredAttributes = ['data', 'reducer'];
-
     function isValidAttribute(attributeName) {
         return ignoredAttributes.indexOf(attributeName) < 0;
     }
 
-    const dataGroupMissingDataKey = () => `'<data-group>' requires 'data-key' attribute. Data-key value should refer to the unique attribute of the data.`;
+    const contextArrayMissingDataKey = () => `'<context-array>' requires 'data-key' attribute. Data-key value should refer to the unique attribute of the data.`;
     const toggleMissingStateAndProperty = () => `toggle require 3 parameters separated with dot(.) : ' eg <div class="my-div" class.disabled.toggle="disabledCss"></div>`;
 
     function populateDefaultAttributeValue(element) {
@@ -38,7 +37,6 @@
         });
         return attributeValue;
     }
-
     class AttributeEvaluator {
         constructor(activeNode, dataGetter, updateData, reducer) {
             this.stateAttributeProperty = null;
@@ -67,7 +65,6 @@
             initEventListener(activeNode, this.eventStateAction, dataGetter, updateData, reducer);
         }
     }
-
     const mapEventStateAction = (attributeValue) => {
         const eventStateAction = new Map();
         attributeValue.forEach((value, attributeName) => {
@@ -78,10 +75,12 @@
                 if (attributes.length === 1) {
                     event = 'click';
                     state = STATE_GLOBAL;
-                } else if (attributes.length === 2) {
+                }
+                else if (attributes.length === 2) {
                     event = attributes[0];
                     state = STATE_GLOBAL;
-                } else if (attributes.length > 2) {
+                }
+                else if (attributes.length > 2) {
                     event = attributes[0];
                     state = attributes[1];
                 }
@@ -103,10 +102,12 @@
                 if (attributes.length === 1) {
                     attribute = 'content';
                     state = STATE_GLOBAL;
-                } else if (attributes.length === 2) {
+                }
+                else if (attributes.length === 2) {
                     attribute = attributes[0];
                     state = STATE_GLOBAL;
-                } else if (attributes.length > 2) {
+                }
+                else if (attributes.length > 2) {
                     attribute = attributes[0];
                     state = attributes[1];
                 }
@@ -132,7 +133,8 @@
                         attributeStateProperty.set(attribute, new Map());
                     }
                     attributeStateProperty.get(attribute).set(state, value);
-                } else {
+                }
+                else {
                     throw new Error(toggleMissingStateAndProperty());
                 }
             }
@@ -226,7 +228,6 @@
             this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, dataGetter, this.updateData, this.reducer));
         }
     }
-
     const activeNodesLookup = (attributesSuffix, nodes) => {
         return nodes.filter(noEmptyTextNode()).reduce((accumulator, node) => {
             if (!(node instanceof HTMLElement)) {
@@ -239,7 +240,7 @@
                     accumulator.add(element);
                 }
             }
-            if (!contains(element.tagName, ['DATA-GROUP', 'DATA-ELEMENT'])) {
+            if (!contains(element.tagName, ['CONTEXT-ARRAY', 'CONTEXT-ELEMENT'])) {
                 const childrenNodes = activeNodesLookup(attributesSuffix, Array.from(element.childNodes));
                 Array.from(childrenNodes).forEach(childNode => accumulator.add(childNode));
             }
@@ -247,7 +248,7 @@
         }, new Set());
     };
 
-    class DataElement extends HTMLElement {
+    class ContextElement extends HTMLElement {
         constructor() {
             super();
             this.setData = (context) => {
@@ -282,7 +283,7 @@
                     anchorNode = node;
                 }
                 const data = this.dataSource;
-                const dataGetter = () => ({data});
+                const dataGetter = () => ({ data });
                 this.renderer.render(dataGetter);
                 this.lastChild.remove();
             };
@@ -296,15 +297,12 @@
             this.renderer = null;
             this.reducer = (data) => data;
         }
-
         get data() {
             return this.dataSource;
         }
-
         set data(value) {
             this.setData(() => value);
         }
-
         connectedCallback() {
             this.initAttribute();
             if (hasNoValue(this.template)) {
@@ -323,7 +321,7 @@
         }
     }
 
-    class DataGroup extends DataElement {
+    class ContextArray extends ContextElement {
         constructor() {
             super();
             this.setDataKeyPicker = (dataKeyPicker) => {
@@ -358,7 +356,7 @@
                         }
                         anchorNode = node;
                     }
-                    const dataGetter = () => ({data, key: dataKey, index: (dpLength - index)});
+                    const dataGetter = () => ({ data, key: dataKey, index: (dpLength - index) });
                     itemRenderer.render(dataGetter);
                 });
                 this.lastChild.remove();
@@ -377,7 +375,7 @@
             };
             const defaultDataKeyPicker = (data) => {
                 if (hasNoValue(this.dataKeyField)) {
-                    throw new Error(dataGroupMissingDataKey());
+                    throw new Error(contextArrayMissingDataKey());
                 }
                 return data[this.dataKeyField];
             };
@@ -385,11 +383,9 @@
             this.dataKeyPicker = defaultDataKeyPicker;
             this.reducer = (data) => data;
         }
-
         static get observedAttributes() {
             return [DATA_KEY_ATTRIBUTE];
         }
-
         attributeChangedCallback(name, oldValue, newValue) {
             if (name === DATA_KEY_ATTRIBUTE) {
                 this.dataKeyField = newValue;
@@ -400,7 +396,7 @@
     const style = document.createElement('style');
     style.innerHTML = `.${HIDE_CLASS} {display: none !important;}`;
     document.head.appendChild(style);
-    customElements.define('data-group', DataGroup);
-    customElements.define('data-element', DataElement);
+    customElements.define('context-array', ContextArray);
+    customElements.define('context-element', ContextElement);
 
 }());
