@@ -20,7 +20,7 @@ const generateRandomUser = (length: number) => {
         userId: Math.random() * 1000000
     }));
 };
-//
+
 test('It should create an element of ContextArray', () => {
     const group = createContextArray();
     expect(true).toBe(group instanceof ContextArray);
@@ -39,6 +39,7 @@ test('It should throw error when setting dataSource without keySelector', (done)
 
 });
 
+// rendering child noe
 test('It should render the childNodes and validate the length based on dataSource', (done) => {
     const contextArray = createContextArray(`<div watch="name"></div>`);
     const users = generateRandomUser(10);
@@ -127,3 +128,85 @@ test('It should bind event against node', (done) => {
         done();
     });
 });
+
+test('It should update the data when click event triggered',(done) => {
+    const contextArray = createContextArray(`
+<div content.watch="name" content.simple.watch="city"></div>
+<button action="SET_SIMPLE" class="simple">Click</button>
+<button action="SET_COMPLETE" class="complete">Click</button>
+`);
+    contextArray.setAttribute('data-key','userId');
+    const users = generateRandomUser(3);
+    contextArray.data = users;
+    contextArray.reducer = (context,action) => {
+        const data = action.data;
+        switch (action.type) {
+            case 'SET_SIMPLE' : {
+                data['@state'] = 'simple';
+                return [...context];
+
+            }
+            case 'SET_COMPLETE' : {
+                data['@state'] = 'complete';
+                return [...context];
+
+            }
+        }
+        return context;
+    };
+    contextArray.onMounted(() =>{
+        expect(contextArray.childNodes.length).toBe(3 * 3);
+        const button:HTMLButtonElement = contextArray.querySelector('button.simple');
+        expect((contextArray.firstChild as HTMLElement).innerHTML).toBe(users[0].name);
+        button.click();
+        expect((contextArray.firstChild as HTMLElement).innerHTML).toBe(users[0].city);
+        done();
+    })
+});
+
+test('It should toggle when user change the data',(done)=>{
+    const contextArray = createContextArray(`
+        <div class="common" 
+        class.one.toggle="one"
+        class.two.toggle="two"
+        >my data</div>
+        <button click.action="SET_ONE">Toggle ONE</button>
+        <button click.action="SET_TWO">Toggle TWO</button>
+        <button click.action="SET_NONE">Toggle Three</button>
+    `);
+    contextArray.reducer = (context,action) => {
+        switch (action.type) {
+            case 'SET_ONE' : {
+                action.data['@state'] = 'one';
+                break;
+            }
+            case 'SET_TWO' : {
+                action.data['@state'] = 'two';
+                break;
+            }
+            case 'SET_NONE' : {
+                delete action.data['@state'];
+                break;
+            }
+        }
+        return context;
+    }
+    contextArray.setAttribute('data-key','userId');
+    contextArray.data = generateRandomUser(5);
+    contextArray.onMounted(() => {
+        expect(contextArray.childNodes.length).toBe(20);
+        const firstElement = contextArray.firstChild as HTMLDivElement;
+        expect(firstElement.getAttribute('class')).toBe('common');
+        const setOne = contextArray.childNodes.item(1) as HTMLButtonElement;
+        const setTwo = contextArray.childNodes.item(2) as HTMLButtonElement;
+        const setThree = contextArray.childNodes.item(3) as HTMLButtonElement;
+        setOne.click();
+        expect(firstElement.getAttribute('class')).toBe('common one');
+        setTwo.click();
+        expect(firstElement.getAttribute('class')).toBe('common two');
+        setThree.click();
+        expect(firstElement.getAttribute('class')).toBe('common');
+        done();
+    });
+
+})
