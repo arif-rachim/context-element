@@ -1,14 +1,20 @@
 {
   "name": "data-group",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "HTMLElement makes it easy for you to create web pages that can display data dynamically",
+  "main": "dist/index.js",
+  "keywords": [
+    "webcomponent",
+    "react",
+    "angular",
+    "html"
+  ],
   "scripts": {
     "test": "jest --coverage",
     "build": "rollup --config rollup.config.js"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Arif Rachim",
+  "license": "MIT",
   "devDependencies": {
     "@types/faker": "^4.1.12",
     "@types/jest": "^26.0.0",

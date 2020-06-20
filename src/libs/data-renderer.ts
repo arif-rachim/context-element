@@ -8,8 +8,6 @@ import {
     UpdateDataCallback,
 } from "../types";
 import noEmptyTextNode from "./no-empty-text-node";
-import {DataGroup} from "../data-group";
-import {DataElement} from "../data-element";
 import AttributeEvaluator from "./attribute-evaluator";
 
 export default class DataRenderer<DataSource, Item> {
@@ -50,7 +48,7 @@ const activeNodesLookup = (attributesSuffix: string[], nodes: ChildNode[]) => {
                 accumulator.add(element);
             }
         }
-        if (!(element instanceof DataGroup || element instanceof DataElement)) {
+        if (!contains(element.tagName, ['DATA-GROUP', 'DATA-ELEMENT'])) {
             const childrenNodes = activeNodesLookup(attributesSuffix, Array.from(element.childNodes));
             Array.from(childrenNodes).forEach(childNode => accumulator.add(childNode));
         }

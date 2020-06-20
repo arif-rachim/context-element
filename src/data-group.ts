@@ -76,7 +76,6 @@ export class DataGroup<Item> extends DataElement<Item[], Item> {
     private removeExpiredData = () => {
         const renderers: Map<string, Renderer> = this.renderers;
         const dataSource: Item[] = this.dataSource;
-        debugger;
         const dataSourceKeys = dataSource.map(data => this.dataKeyPicker(data));
         const prevKeys = Array.from(renderers.keys());
         const discardedKeys = prevKeys.filter(key => dataSourceKeys.indexOf(key) < 0);

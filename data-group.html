@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="src/index.ts"></script>
+</head>
+<body>
+<data-group data-key="name" id="data-group">
+    <div watch="name"></div>
+    <data-group data-key="name" id="data-group2"></data-group>
+</data-group>
+</body>
+<script>
+    document.getElementById('data-group').data = [{name: "example"}]
+</script>
+</html>
