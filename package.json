@@ -2,7 +2,7 @@
   "name": "data-group",
   "version": "1.0.0",
   "description": "HTMLElement makes it easy for you to create web pages that can display data dynamically",
-  "main": "dist/index.js",
+  "main": "index.js",
   "keywords": [
     "webcomponent",
     "react",

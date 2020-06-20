@@ -4,9 +4,16 @@ import {terser} from "rollup-plugin-terser";
 
 export default {
     input: 'src/index.ts',
-    output: {
-        dir: 'dist',
-        format: 'umd'
-    },
-    plugins: [typescript(), terser()]
+    output: [
+        {
+            file: 'index.js',
+            format: 'iife'
+        },
+        {
+            file: 'index.min.js',
+            format: 'iife',
+            plugins: [terser()]
+        }
+    ],
+    plugins: [typescript()]
 };
