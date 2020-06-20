@@ -7,63 +7,63 @@ import {
     DataGetter,
     DataGetterValue,
     hasNoValue,
+    hasValue,
     Reducer,
     STATE_GLOBAL,
     STATE_PROPERTY,
     UpdateDataCallback
 } from "../types";
 import isValidAttribute from "./attribute-validator";
+import {toggleMissingStateAndProperty} from "./error-message";
+
+
+function populateDefaultAttributeValue(element: HTMLElement) {
+    const attributeValue: Map<string, string> = new Map<string, string>();
+    element.getAttributeNames().forEach(attributeName => {
+        attributeValue.set(attributeName, element.getAttribute(attributeName));
+    });
+    return attributeValue;
+}
+
 
 export default class AttributeEvaluator<DataSource, Item> {
     private readonly activeNode: ChildNode;
-    private readonly attributeValue: Map<string, string>;
+    private readonly activeAttributeValue: Map<string, string>;
+    private readonly defaultAttributeValue: Map<string, string>;
     private readonly dataGetter: DataGetter<Item>;
     private readonly updateData: UpdateDataCallback<DataSource>;
     private readonly reducer: Reducer<DataSource, Item>;
+    // mapping for watch
     private readonly stateAttributeProperty: Map<string, Map<string, string>> = null;
+    // mapping for toggle
+    private readonly attributeStateProperty: Map<string, Map<string, string>> = null;
+    // mapping for action
     private readonly eventStateAction: Map<string, Map<string, string>> = null;
 
     constructor(activeNode: ChildNode, dataGetter: DataGetter<Item>, updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource, Item>) {
         this.activeNode = activeNode;
-        this.attributeValue = new Map<string, string>();
         this.dataGetter = dataGetter;
         this.updateData = updateData;
         this.reducer = reducer;
-        this.attributeValue = populateAttributeValue(activeNode as HTMLElement);
-        this.eventStateAction = mapEventStateAction(this.attributeValue);
-        this.stateAttributeProperty = mapStateAttributeProperty(this.attributeValue);
+        this.activeAttributeValue = populateActiveAttributeValue(activeNode as HTMLElement);
+        this.defaultAttributeValue = populateDefaultAttributeValue(activeNode as HTMLElement);
+        this.eventStateAction = mapEventStateAction(this.activeAttributeValue);
+        this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue);
+        this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue);
         initEventListener(activeNode as HTMLElement, this.eventStateAction, dataGetter, updateData, reducer);
     }
-
 
     public render = () => {
         const element = this.activeNode as any;
         const stateAttributeProperty = this.stateAttributeProperty;
+        const attributeStateProperty = this.attributeStateProperty;
         const dataGetterValue = this.dataGetter();
         const data: any = dataGetterValue.data;
-
         const dataState = data[STATE_PROPERTY];
-        const stateAttributeProps = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
-        if (hasNoValue(stateAttributeProps)) {
-            return;
-        }
-        stateAttributeProps.forEach((property: string, attribute: string) => {
-            const val = data[property];
-            if (isValidAttribute(attribute)) {
-                element.setAttribute(attribute, val);
-            }
-            if (attribute in element) {
-                element[attribute] = val;
-                const eventName = composeChangeEventName(attribute);
-                element[eventName] = (val: any) => data[property] = val;
-            }
-            if (attribute === 'content') {
-                element.innerHTML = val;
-            }
-        });
+        const defaultAttributeValue = this.defaultAttributeValue;
+        updateWatchAttribute(element, stateAttributeProperty, dataGetterValue, dataState);
+        updateToggleAttribute(element, attributeStateProperty, dataState, defaultAttributeValue);
     }
-
-
 }
 
 const mapEventStateAction = (attributeValue: Map<string, string>) => {
@@ -118,7 +118,30 @@ const mapStateAttributeProperty = (attributeValue: Map<string, string>) => {
     return stateAttributeProperty;
 };
 
-const populateAttributeValue = (element: HTMLElement) => {
+
+const mapAttributeStateProperty = (attributeValue: Map<string, string>) => {
+    const attributeStateProperty: Map<string, Map<string, string>> = new Map<string, Map<string, string>>();
+    attributeValue.forEach((value, attributeName) => {
+        if (attributeName.endsWith(DATA_TOGGLE_ATTRIBUTE)) {
+            const attributes = attributeName.split('.');
+            let attribute = '';
+            let state = '';
+            if (attributes.length === 3) {
+                attribute = attributes[0];
+                state = attributes[1];
+                if (!attributeStateProperty.has(attribute)) {
+                    attributeStateProperty.set(attribute, new Map<string, string>());
+                }
+                attributeStateProperty.get(attribute).set(state, value);
+            } else {
+                throw new Error(toggleMissingStateAndProperty())
+            }
+        }
+    });
+    return attributeStateProperty;
+};
+
+const populateActiveAttributeValue = (element: HTMLElement) => {
     const attributeValue: Map<string, string> = new Map<string, string>();
     element.getAttributeNames().filter(name => contains(name, [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE])).forEach(attributeName => {
         attributeValue.set(attributeName, element.getAttribute(attributeName));
@@ -150,5 +173,47 @@ const initEventListener = <DataSource, Item>(element: HTMLElement, eventStateAct
                 });
             }
         })
+    });
+};
+
+const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, Map<string, string>>, dataGetterValue: DataGetterValue<any>, dataState: string) => {
+    const data = dataGetterValue.data;
+    const stateAttributeProps = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
+    if (hasNoValue(stateAttributeProps)) {
+        return;
+    }
+    stateAttributeProps.forEach((property: string, attribute: string) => {
+        const val = data[property];
+        if (isValidAttribute(attribute)) {
+            element.setAttribute(attribute, val);
+        }
+        if (attribute in element) {
+            element[attribute] = val;
+            const eventName = composeChangeEventName(attribute);
+            element[eventName] = (val: any) => data[property] = val;
+        }
+        if (attribute === 'content') {
+            element.innerHTML = val;
+        }
+    });
+};
+
+const updateToggleAttribute = (element: HTMLElement, attributeStateProperty: Map<string, Map<string, string>>, dataState: any, defaultAttributeValue: Map<string, string>) => {
+    attributeStateProperty.forEach((stateProperty: Map<string, string>, attribute: string) => {
+        const attributeValue: string[] = [];
+
+        const defaultValue = defaultAttributeValue.get(attribute);
+        const propertyValue = stateProperty.get(dataState);
+
+        if (hasValue(defaultValue)) {
+            attributeValue.push(defaultValue);
+        }
+        if (hasValue(propertyValue)) {
+            attributeValue.push(propertyValue);
+        }
+        const newAttributeValue = attributeValue.join(' ');
+        if (element.getAttribute(attribute) !== newAttributeValue) {
+            element.setAttribute(attribute, newAttributeValue);
+        }
     });
 };
