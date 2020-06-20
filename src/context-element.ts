@@ -2,6 +2,31 @@ import {composeChangeEventName, DataSetter, hasNoValue, hasValue, HIDE_CLASS, Re
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import DataRenderer from "./libs/data-renderer";
 
+/**
+ * ContextElement is HTMLElement which can render data in accordance with the template defined in it.
+ * Shortly after we assign a value to the data property, ContextElement will then render the data based on the template
+ *
+ * The following is an example of how we display the template page.
+ *
+ * <pre>
+ *     <code>
+ *         <context-element id="my-element">
+ *             <div watch="name"></div>
+ *             <div watch="city"></div>
+ *             <div watch="email"></div>
+ *         </context-element>
+ *         <script>
+ *             const contextElement = document.getElementById('my-element');
+ *             contextElement.data = {name:"Javascript",city:"Tokyo",email:"javascript@contextelement.com};
+ *         </script>
+ *     </code>
+ * </pre>
+ *
+ * Based on the above code ContextElement will populate the data into template elements by binding the watch attribute with the data property.
+ * Attribute watch, is one of the 3 attributes used by ContextElement to render data.
+ * The three attributes are watch / toggle / action
+ *
+ */
 export class ContextElement<DataSource, Item> extends HTMLElement {
     public reducer: Reducer<DataSource, Item>;
     protected template: ChildNode[];
