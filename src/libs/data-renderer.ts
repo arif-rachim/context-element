@@ -1,4 +1,5 @@
 import {
+    contains,
     DATA_ACTION_ATTRIBUTE,
     DATA_TOGGLE_ATTRIBUTE,
     DATA_WATCH_ATTRIBUTE,
@@ -45,11 +46,8 @@ const activeNodesLookup = (attributesSuffix: string[], nodes: ChildNode[]) => {
         const element = node as HTMLElement;
         const attributeNames = element.getAttributeNames();
         for (const attribute of attributeNames) {
-            for (const attributeSuffix of attributesSuffix) {
-                if (attribute.split('.').indexOf(attributeSuffix) >= 0) {
-                    accumulator.add(element);
-                    break;
-                }
+            if (contains(attribute, attributesSuffix)) {
+                accumulator.add(element);
             }
         }
         if (!(element instanceof DataGroup || element instanceof DataElement)) {
