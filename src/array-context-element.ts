@@ -3,6 +3,29 @@ import {ContextElement} from "./context-element";
 import {arrayContextElementMissingDataKey} from "./libs/error-message";
 import DataRenderer from "./libs/data-renderer";
 
+/**
+ * ArrayContextElement is ContextElement which can render array instead of javascript object.
+ * The following is an example of how we display the context-array page.
+ *
+ * <pre>
+ *     <code>
+ *         <context-array id="my-element"  data-key="id">
+ *             <div watch="name"></div>
+ *             <div watch="city"></div>
+ *             <div watch="email"></div>
+ *         </context-array>
+ *         <script>
+ *             const contextElement = document.getElementById('my-element');
+ *             contextElement.data = [
+ *                  {name:"Javascript",city:"Tokyo",email:"javascript@contextelement.com,dataId:"1"},
+ *                  {name:"Go",city:"Dubai",email:"go@contextelement.com,dataId:"2"},
+ *                  {name:"Java",city:"Doha",email:"java@contextelement.com,dataId:"3"}
+ *             ];
+ *         </script>
+ *     </code>
+ * </pre>
+ *
+ */
 export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
 
     private dataKeyPicker: ToString<Item>;

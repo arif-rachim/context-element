@@ -4,8 +4,6 @@ import DataRenderer from "./libs/data-renderer";
 
 /**
  * ContextElement is HTMLElement which can render data in accordance with the template defined in it.
- * Shortly after we assign a value to the data property, ContextElement will then render the data based on the template
- *
  * The following is an example of how we display the template page.
  *
  * <pre>
@@ -22,9 +20,9 @@ import DataRenderer from "./libs/data-renderer";
  *     </code>
  * </pre>
  *
- * Based on the above code ContextElement will populate the data into template elements by binding the watch attribute with the data property.
- * Attribute watch, is one of the 3 attributes used by ContextElement to render data.
- * The three attributes are watch / toggle / action
+ * ContextElement will populate the data into template by looking at the attribute which has watch keyword in it.
+ * These attribute which has keyword `watch` in it are also known as active-attribute.
+ * There are 3 kinds of active-attribute,  (watch / toggle / action). each attribute works with a different mechanism when ContextElement renders the data.
  *
  */
 export class ContextElement<DataSource, Item> extends HTMLElement {
@@ -34,6 +32,9 @@ export class ContextElement<DataSource, Item> extends HTMLElement {
     protected dataSource: DataSource;
     protected onMountedCallback: () => void;
 
+    /**
+     * Constructor sets default value of reducer to return the parameter immediately (param) => param.
+     */
     constructor() {
         super();
         this.template = null;
@@ -41,23 +42,55 @@ export class ContextElement<DataSource, Item> extends HTMLElement {
         this.reducer = (data) => data;
     }
 
+    /**
+     * Get the value of data in this ContextElement
+     */
     get data(): DataSource {
         return this.dataSource;
     }
 
+    /**
+     * Set the value of ContextElement data
+     * @param value
+     */
     set data(value: DataSource) {
         this.setData(() => value);
     }
 
+    /**
+     * Callback function to set the data,
+     * <pre>
+     *     <code>
+     *         contextElement.setData(data => ({...data,attribute:newValue});
+     *     </code>
+     * </pre>
+     *
+     * @param context
+     */
     public setData = (context: DataSetter<DataSource>) => {
         this.dataSource = context(this.dataSource);
         this.render();
     };
 
+    /**
+     * onMounted is invoke when the Element is ready and mounted to the window.document.
+     * <pre>
+     *     <code>
+     *         contextElement.onMounted(() => console.log(`ChildNodes Ready `,contextElement.childNodes.length > 0));
+     *     </code>
+     * </pre>
+     * @param onMountedListener
+     */
     public onMounted = (onMountedListener: () => void) => {
         this.onMountedCallback = onMountedListener;
     };
 
+    /**
+     * connectedCallback is invoked each time the custom element is appended into a document-connected element.
+     * When connectedCallback invoked, it will initialize the active attribute, populate the template, and call
+     * onMountedCallback. Populating the template will be invoke one time only, the next call of connectedCallback will not
+     * repopulate the template again.
+     */
     connectedCallback() {
         this.initAttribute();
         if (hasNoValue(this.template)) {
@@ -75,6 +108,15 @@ export class ContextElement<DataSource, Item> extends HTMLElement {
         }
     }
 
+    /**
+     * updateDataCallback is a callback function that will set the data and call `dataChanged` method.
+     * <pre>
+     *     <code>
+     *         contextElement.dataChanged = (data) => console.log("data changed");
+     *     </code>
+     * </pre>
+     * @param dataSetter
+     */
     protected updateDataCallback = (dataSetter: DataSetter<DataSource>) => {
         this.setData(dataSetter);
         const dataChangedEvent: string = composeChangeEventName('data');
@@ -83,6 +125,17 @@ export class ContextElement<DataSource, Item> extends HTMLElement {
         }
     };
 
+    /**
+     * render method is invoked by the component when it received a new data-update.
+     * First it will create DataRenderer object if its not exist.
+     * DataRenderer require ContextElement template, updateDataCallback, and reducer.
+     * Each time render method is invoked, a new callback to get the latest data (dataGetter) is created and passed to
+     * DataRenderer render method.
+     *
+     * DataRenderer then will use the dataGetter to call reducer to get a new updated copy of the data, update the template
+     * and call the updateDataCallback to update the original data with a new copy.
+     *
+     */
     protected render = () => {
         if (hasNoValue(this.dataSource) || hasNoValue(this.template)) {
             return;
@@ -107,10 +160,17 @@ export class ContextElement<DataSource, Item> extends HTMLElement {
         this.lastChild.remove();
     };
 
+    /**
+     * initAttribute is the method to initialize ContextElement attribute invoked each time connectedCallback is called.
+     */
     protected initAttribute = () => {
         // we are nt implementing here
     };
 
+    /**
+     * Populate the ContextElement template by storing the node child-nodes into template property.
+     * Once the child nodes is stored in template property, ContextElement will clear its content by calling this.innerHTML = ''
+     */
     private populateTemplate = () => {
         this.template = Array.from(this.childNodes).filter(noEmptyTextNode());
         this.innerHTML = ''; // we cleanup the innerHTML
