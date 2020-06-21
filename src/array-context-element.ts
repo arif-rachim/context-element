@@ -32,6 +32,9 @@ export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
     private dataKeyField: string;
     private readonly renderers: Map<string, Renderer>;
 
+    /**
+     * Set the default dataKeyPicker using callback that return value of object dataKeyField.
+     */
     constructor() {
         super();
         const defaultDataKeyPicker = (data: Item) => {
@@ -42,27 +45,58 @@ export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
         };
         this.renderers = new Map<string, Renderer>();
         this.dataKeyPicker = defaultDataKeyPicker;
-        this.reducer = (data) => data;
     }
 
+    /**
+     * Observed attributes in context element
+     */
     static get observedAttributes() {
         return [DATA_KEY_ATTRIBUTE];
     }
 
+    /**
+     * DataKeyPicker is a callback function to get the string key value of a data.
+     *
+     * @param dataKeyPicker
+     */
     public setDataKeyPicker = (dataKeyPicker: ToString<Item>) => {
         this.dataKeyPicker = dataKeyPicker;
     };
 
+    /**
+     * update the dataKeyField if theres a new change in the attribute.
+     *
+     * @param name of the attribute
+     * @param oldValue
+     * @param newValue
+     */
     attributeChangedCallback(name: string, oldValue: string, newValue: string) {
         if (name === DATA_KEY_ATTRIBUTE) {
             this.dataKeyField = newValue;
         }
     }
 
+    /**
+     * initAttribute store the data-key attribute value to dataKeyField property.
+     */
     protected initAttribute = () => {
         this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE);
     };
 
+    /**
+     * render method is invoked by the component when it received a new array-update.
+     *
+     * It will iterate the array and get the key value of the data.
+     * It will create a DataRenderer if there is no dataRenderer exist against the key.
+     * DataRenderer require ContextElement template, updateDataCallback, and reducer.
+     *
+     * Each time render method is invoked, a new callback to get the latest data (dataGetter) is created and passed to
+     * DataRenderer render method.
+     *
+     * DataRenderer then will use the dataGetter to call reducer to get a new updated copy of the data, update the template
+     * and call the updateDataCallback to update the original data with a new copy.
+     *
+     */
     protected render = () => {
         const dataSource: Item[] = this.dataSource;
         const template: ChildNode[] = this.template;
@@ -95,6 +129,9 @@ export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
         this.lastChild.remove();
     };
 
+    /**
+     * Function to remove keys that is no longer exist in the dataSource.
+     */
     private removeExpiredData = () => {
         const renderers: Map<string, Renderer> = this.renderers;
         const dataSource: Item[] = this.dataSource;

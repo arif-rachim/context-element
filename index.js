@@ -13,6 +13,9 @@
     const STATE_GLOBAL = '*';
     const HIDE_CLASS = "data-element-hidden";
 
+    /**
+     * Function to remove empty text node.
+     */
     function noEmptyTextNode() {
         return (node) => {
             if (node.nodeType === Node.TEXT_NODE) {
@@ -27,7 +30,7 @@
         return ignoredAttributes.indexOf(attributeName) < 0;
     }
 
-    const contextArrayMissingDataKey = () => `'<context-array>' requires 'data-key' attribute. Data-key value should refer to the unique attribute of the data.`;
+    const arrayContextElementMissingDataKey = () => `'<context-array>' requires 'data-key' attribute. Data-key value should refer to the unique attribute of the data.`;
     const toggleMissingStateAndProperty = () => `toggle require 3 parameters separated with dot(.) : ' eg <div class="my-div" class.disabled.toggle="disabledCss"></div>`;
 
     function populateDefaultAttributeValue(element) {
@@ -39,8 +42,11 @@
     }
     class AttributeEvaluator {
         constructor(activeNode, dataGetter, updateData, reducer) {
+            // mapping for watch
             this.stateAttributeProperty = null;
+            // mapping for toggle
             this.attributeStateProperty = null;
+            // mapping for action
             this.eventStateAction = null;
             this.render = () => {
                 const element = this.activeNode;
@@ -248,16 +254,70 @@
         }, new Set());
     };
 
+    /**
+     * ContextElement is HTMLElement which can render data in accordance with the template defined in it.
+     * The following is an example of how we display the template page.
+     *
+     * <pre>
+     *     <code>
+     *         <context-element id="my-element">
+     *             <div watch="name"></div>
+     *             <div watch="city"></div>
+     *             <div watch="email"></div>
+     *         </context-element>
+     *         <script>
+     *             const contextElement = document.getElementById('my-element');
+     *             contextElement.data = {name:"Javascript",city:"Tokyo",email:"javascript@contextelement.com};
+     *         </script>
+     *     </code>
+     * </pre>
+     *
+     * ContextElement will populate the data into template by looking at the attribute which has watch keyword in it.
+     * These attribute which has keyword `watch` in it are also known as active-attribute.
+     * There are 3 kinds of active-attribute,  (watch / toggle / action). each attribute works with a different mechanism when ContextElement renders the data.
+     *
+     */
     class ContextElement extends HTMLElement {
+        /**
+         * Constructor sets default value of reducer to return the parameter immediately (param) => param.
+         */
         constructor() {
             super();
+            /**
+             * Callback function to set the data,
+             * <pre>
+             *     <code>
+             *         contextElement.setData(data => ({...data,attribute:newValue});
+             *     </code>
+             * </pre>
+             *
+             * @param context
+             */
             this.setData = (context) => {
                 this.dataSource = context(this.dataSource);
                 this.render();
             };
+            /**
+             * onMounted is invoke when the Element is ready and mounted to the window.document.
+             * <pre>
+             *     <code>
+             *         contextElement.onMounted(() => console.log(`ChildNodes Ready `,contextElement.childNodes.length > 0));
+             *     </code>
+             * </pre>
+             * @param onMountedListener
+             */
             this.onMounted = (onMountedListener) => {
                 this.onMountedCallback = onMountedListener;
             };
+            /**
+             * updateDataCallback is a callback function that will set the data and call `dataChanged` method.
+             * <pre>
+             *     <code>
+             *         contextElement.dataChanged = (data) => console.log("data changed");
+             *     </code>
+             * </pre>
+             * @param dataSetter
+             */
             this.updateDataCallback = (dataSetter) => {
                 this.setData(dataSetter);
                 const dataChangedEvent = composeChangeEventName('data');
@@ -265,6 +325,17 @@
                     this[dataChangedEvent].call(this, this.dataSource);
                 }
             };
+            /**
+             * render method is invoked by the component when it received a new data-update.
+             * First it will create DataRenderer object if its not exist.
+             * DataRenderer require ContextElement template, updateDataCallback, and reducer.
+             * Each time render method is invoked, a new callback to get the latest data (dataGetter) is created and passed to
+             * DataRenderer render method.
+             *
+             * DataRenderer then will use the dataGetter to call reducer to get a new updated copy of the data, update the template
+             * and call the updateDataCallback to update the original data with a new copy.
+             *
+             */
             this.render = () => {
                 if (hasNoValue(this.dataSource) || hasNoValue(this.template)) {
                     return;
@@ -282,27 +353,52 @@
                     }
                     anchorNode = node;
                 }
+                // @ts-ignore
                 const data = this.dataSource;
-                const dataGetter = () => ({ data });
+                const dataGetter = () => ({data});
                 this.renderer.render(dataGetter);
                 this.lastChild.remove();
             };
+            /**
+             * initAttribute is the method to initialize ContextElement attribute invoked each time connectedCallback is called.
+             */
             this.initAttribute = () => {
+                // we are nt implementing here
             };
+            /**
+             * Populate the ContextElement template by storing the node child-nodes into template property.
+             * Once the child nodes is stored in template property, ContextElement will clear its content by calling this.innerHTML = ''
+             */
             this.populateTemplate = () => {
                 this.template = Array.from(this.childNodes).filter(noEmptyTextNode());
-                this.innerHTML = '';
+                this.innerHTML = ''; // we cleanup the innerHTML
             };
             this.template = null;
             this.renderer = null;
             this.reducer = (data) => data;
         }
+
+        /**
+         * Get the value of data in this ContextElement
+         */
         get data() {
             return this.dataSource;
         }
+
+        /**
+         * Set the value of ContextElement data
+         * @param value
+         */
         set data(value) {
             this.setData(() => value);
         }
+
+        /**
+         * connectedCallback is invoked each time the custom element is appended into a document-connected element.
+         * When connectedCallback invoked, it will initialize the active attribute, populate the template, and call
+         * onMountedCallback. Populating the template will be invoke one time only, the next call of connectedCallback will not
+         * repopulate the template again.
+         */
         connectedCallback() {
             this.initAttribute();
             if (hasNoValue(this.template)) {
@@ -321,7 +417,30 @@
         }
     }
 
-    class ContextArray extends ContextElement {
+    /**
+     * ArrayContextElement is ContextElement which can render array instead of javascript object.
+     * The following is an example of how we display the context-array page.
+     *
+     * <pre>
+     *     <code>
+     *         <context-array id="my-element"  data-key="id">
+     *             <div watch="name"></div>
+     *             <div watch="city"></div>
+     *             <div watch="email"></div>
+     *         </context-array>
+     *         <script>
+     *             const contextElement = document.getElementById('my-element');
+     *             contextElement.data = [
+     *                  {name:"Javascript",city:"Tokyo",email:"javascript@contextelement.com,dataId:"1"},
+     *                  {name:"Go",city:"Dubai",email:"go@contextelement.com,dataId:"2"},
+     *                  {name:"Java",city:"Doha",email:"java@contextelement.com,dataId:"3"}
+     *             ];
+     *         </script>
+     *     </code>
+     * </pre>
+     *
+     */
+    class ArrayContextElement extends ContextElement {
         constructor() {
             super();
             this.setDataKeyPicker = (dataKeyPicker) => {
@@ -375,7 +494,7 @@
             };
             const defaultDataKeyPicker = (data) => {
                 if (hasNoValue(this.dataKeyField)) {
-                    throw new Error(contextArrayMissingDataKey());
+                    throw new Error(arrayContextElementMissingDataKey());
                 }
                 return data[this.dataKeyField];
             };
@@ -396,7 +515,7 @@
     const style = document.createElement('style');
     style.innerHTML = `.${HIDE_CLASS} {display: none !important;}`;
     document.head.appendChild(style);
-    customElements.define('context-array', ContextArray);
+    customElements.define('array-context-element', ArrayContextElement);
     customElements.define('context-element', ContextElement);
 
 }());
