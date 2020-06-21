@@ -1,5 +1,5 @@
 import {ContextElement} from './context-element';
-import '../index';
+import './index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
 

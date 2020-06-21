@@ -1,5 +1,5 @@
 import {ArrayContextElement} from './array-context-element';
-import '../index';
+import './index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
 import {DATA_KEY_ATTRIBUTE, STATE_PROPERTY} from "./types";
