@@ -19,6 +19,8 @@ export const STATE_PROPERTY = '_state_';
 export const STATE_GLOBAL = '*';
 export const DATA_KEY_ATTRIBUTE = 'data.key';
 export const HIDE_CLASS: string = "data-element-hidden";
+export const ARRAY_CONTEXT_ELEMENT_TAG_NAME = 'context-array';
+export const CONTEXT_ELEMENT_TAG_NAME = 'context-element';
 
 const style = document.createElement('style');
 style.innerHTML = `.${HIDE_CLASS} {display: none !important;}`;

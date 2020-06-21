@@ -8,10 +8,12 @@
     const DATA_WATCH_ATTRIBUTE = 'watch';
     const DATA_ACTION_ATTRIBUTE = 'action';
     const DATA_TOGGLE_ATTRIBUTE = 'toggle';
-    const STATE_PROPERTY = '@state';
+    const STATE_PROPERTY = '_state_';
     const STATE_GLOBAL = '*';
     const DATA_KEY_ATTRIBUTE = 'data.key';
     const HIDE_CLASS = "data-element-hidden";
+    const ARRAY_CONTEXT_ELEMENT_TAG_NAME = 'context-array';
+    const CONTEXT_ELEMENT_TAG_NAME = 'context-element';
     const style = document.createElement('style');
     style.innerHTML = `.${HIDE_CLASS} {display: none !important;}`;
     document.head.appendChild(style);
@@ -29,7 +31,6 @@
     }
 
     const ignoredAttributes = ['data', 'reducer'];
-
     /**
      * isValidAttribute return if there is active-attribute to be ignore by the ContextElement.
      * @param attributeName
@@ -51,8 +52,34 @@
      * AttributeEvaluator is a class that stores information about node that have active-attributes.
      * The AttributeEvaluator is called by the DataRenderer object when DataRenderer.render is executed.
      *
+     * AttributeEvaluator require the activeNode,dataGetter,updateDataCallback, and the reducer function from the DataRenderer.
+     *
+     * When the AttributeEvaluator initiated, the attribute evaluator will extract all the active-attributes from active-node and store them in
+     * `activeAttributeValue`.
+     *
+     * Once the activeAttribute extracted from the node, AttributeEvaluator will remove those attributes from the node, remaining
+     * only non-active attributes.
+     *
+     * The non active attributes then will be extracted from the node, and stored in the `defaultAttributeValue` property.
+     *
+     * The next step of the initialization process it to extract the active attributes and group them into 3 different map.
+     * 1. stateAttributeProperty :  mapping of `data.property` group by first state then attribute.
+     * 2. attributeStateProperty : mapping of `data.property` group by first attribute then state.
+     * 3. eventStateAction : mapping of action group by first event then state.
+     *
+     * The last step of the initialization of AttributeEvaluator, is to bind the node against eventStateAction.
      */
     class AttributeEvaluator {
+        /**
+         * Constructor will perform initialization by constructing activeAttributeValue, defaultAttributeValue, eventStateAction,
+         * stateAttributeProperty and attributeStateProperty.
+         * The last process would be initialization of event listener.
+         *
+         * @param activeNode : node that contains active-attribute.
+         * @param dataGetter : callback function to return current data.
+         * @param updateData : callback function to inform DataRenderer that a new data is created because of user action.
+         * @param reducer : function to map data into a new one because of user action.
+         */
         constructor(activeNode, dataGetter, updateData, reducer) {
             // mapping for watch
             this.stateAttributeProperty = null;
@@ -60,6 +87,10 @@
             this.attributeStateProperty = null;
             // mapping for action
             this.eventStateAction = null;
+            /**
+             * Render method will be invoked my DataRenderer.render. Render method will perform 2 major things,
+             * update active-attribute `watch:updateAttributeWatch`  and `toggle:updateToggleAttribute`.
+             */
             this.render = () => {
                 const element = this.activeNode;
                 const stateAttributeProperty = this.stateAttributeProperty;
@@ -192,13 +223,28 @@
             });
         });
     };
+    /**
+     * UpdateWatchAttribute is a method that will perform update against node active-attribute. First it will get the current
+     * stateAttributeProps based on the data state, then it will iterate over the attributeProps of the data. On each attribute
+     * the method will then assign the actual value of the data.property against the element attribute.
+     *
+     * If the attribute is also a valid element.property, then this method will set the value of element.property against the
+     * data.property value.
+     *
+     * If the attribute value is `content`, then the element.innerHTML value will be set against the data.property value.
+     *
+     * @param element : node or also an HTMLElement
+     * @param stateAttributeProperty : object that store the mapping of property against state and attribute.
+     * @param dataGetterValue : object that get the current value of the data.
+     * @param dataState : state value of the object.
+     */
     const updateWatchAttribute = (element, stateAttributeProperty, dataGetterValue, dataState) => {
         const data = dataGetterValue.data;
-        const stateAttributeProps = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
-        if (hasNoValue(stateAttributeProps)) {
+        const attributePropies = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
+        if (hasNoValue(attributePropies)) {
             return;
         }
-        stateAttributeProps.forEach((property, attribute) => {
+        attributePropies.forEach((property, attribute) => {
             const val = data[property];
             if (isValidAttribute(attribute)) {
                 element.setAttribute(attribute, val);
@@ -213,6 +259,16 @@
             }
         });
     };
+    /**
+     * UpdateToggleAttribute is a method that will append the value of attribute based on the data.state. It will iterate over
+     * attributeStateProperty, if the current data.state is available in the attributeStateProperty, then the value of the attribute
+     * will be appended against the default attribute value.
+     *
+     * @param element : node or also an HTMLElement
+     * @param attributeStateProperty : object that store the mapping of property against attribute and state.
+     * @param dataState : state value of the object.
+     * @param defaultAttributeValue : default value of the active-attribute toggle.
+     */
     const updateToggleAttribute = (element, attributeStateProperty, dataState, defaultAttributeValue) => {
         attributeStateProperty.forEach((stateProperty, attribute) => {
             const attributeValue = [];
@@ -232,8 +288,8 @@
     };
 
     /**
-     *
-     * @param element
+     * PopulateDefaultAttributeValue will iterate over all element attributeNames, and return them in the form of Map.
+     * @param element : active node or the HTMLElement
      */
     function populateDefaultAttributeValue(element) {
         const attributeValue = new Map();
@@ -280,7 +336,6 @@
             this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, dataGetter, this.updateData, this.reducer));
         }
     }
-
     /**
      * activeNodesLookup will return nodes which has the `active-attributes`. Active attributes are the node attribute that contains attributesSuffix.
      * Example of active-attributes value.watch .
@@ -306,7 +361,7 @@
                     accumulator.add(element);
                 }
             }
-            if (!contains(element.tagName, ['CONTEXT-ARRAY', 'CONTEXT-ELEMENT'])) {
+            if (!contains(element.tagName, [ARRAY_CONTEXT_ELEMENT_TAG_NAME, CONTEXT_ELEMENT_TAG_NAME])) {
                 const childrenNodes = activeNodesLookup(attributesSuffix, Array.from(element.childNodes));
                 Array.from(childrenNodes).forEach(childNode => accumulator.add(childNode));
             }
@@ -588,14 +643,12 @@
             this.renderers = new Map();
             this.dataKeyPicker = defaultDataKeyPicker;
         }
-
         /**
          * Observed attributes in context element
          */
         static get observedAttributes() {
             return [DATA_KEY_ATTRIBUTE];
         }
-
         /**
          * update the dataKeyField if theres a new change in the attribute.
          *
@@ -610,7 +663,7 @@
         }
     }
 
-    customElements.define('array-context-element', ArrayContextElement);
-    customElements.define('context-element', ContextElement);
+    customElements.define(ARRAY_CONTEXT_ELEMENT_TAG_NAME, ArrayContextElement);
+    customElements.define(CONTEXT_ELEMENT_TAG_NAME, ContextElement);
 
 }());

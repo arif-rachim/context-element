@@ -1,5 +1,7 @@
 import {
+    ARRAY_CONTEXT_ELEMENT_TAG_NAME,
     contains,
+    CONTEXT_ELEMENT_TAG_NAME,
     DATA_ACTION_ATTRIBUTE,
     DATA_TOGGLE_ATTRIBUTE,
     DATA_WATCH_ATTRIBUTE,
@@ -102,7 +104,7 @@ const activeNodesLookup = (attributesSuffix: string[], nodes: ChildNode[]) => {
                 accumulator.add(element);
             }
         }
-        if (!contains(element.tagName, ['CONTEXT-ARRAY', 'CONTEXT-ELEMENT'])) {
+        if (!contains(element.tagName, [ARRAY_CONTEXT_ELEMENT_TAG_NAME, CONTEXT_ELEMENT_TAG_NAME])) {
             const childrenNodes = activeNodesLookup(attributesSuffix, Array.from(element.childNodes));
             Array.from(childrenNodes).forEach(childNode => accumulator.add(childNode));
         }
