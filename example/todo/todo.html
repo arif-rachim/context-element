@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Example of TODO HTML</title>
+    <script src="../../src/index.ts"></script>
+</head>
+<body>
+<context-element id="myTodo">
+    <form submit.action="ADD_TODO">
+        <input input.action="SET_TODO" type="text" value.watch="todo.todo">
+        <button type="submit">Add</button>
+    </form>
+    <context-array data.key="id" data.watch="todoCollection" reducer.watch="todoReducer">
+        <input checked.watch="done" input.action="TOGGLE_CHECKBOX" type="checkbox">
+        <span watch="todo"></span>
+    </context-array>
+</context-element>
+<script src="index.ts"></script>
+</body>
+</html>

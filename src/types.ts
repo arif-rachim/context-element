@@ -15,7 +15,7 @@ export const contains = (text: string, texts: string[]) => texts.reduce((acc, tx
 export const DATA_WATCH_ATTRIBUTE = 'watch';
 export const DATA_ACTION_ATTRIBUTE = 'action';
 export const DATA_TOGGLE_ATTRIBUTE = 'toggle';
-export const STATE_PROPERTY = '_state_';
+export const STATE_PROPERTY = '_state';
 export const STATE_GLOBAL = '*';
 export const DATA_KEY_ATTRIBUTE = 'data.key';
 export const HIDE_CLASS: string = "data-element-hidden";

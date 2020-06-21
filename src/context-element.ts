@@ -25,11 +25,11 @@ import DataRenderer from "./libs/data-renderer";
  * There are 3 kinds of active-attribute,  (watch / toggle / action). each attribute works with a different mechanism when ContextElement renders the data.
  *
  */
-export class ContextElement<DataSource, Item> extends HTMLElement {
-    public reducer: Reducer<DataSource, Item>;
+export class ContextElement<Context, Item> extends HTMLElement {
+    public reducer: Reducer<Context, Item>;
     protected template: ChildNode[];
-    protected renderer: DataRenderer<DataSource, Item>;
-    protected dataSource: DataSource;
+    protected renderer: DataRenderer<Context, Item>;
+    protected dataSource: Context;
     protected onMountedCallback: () => void;
 
     /**
@@ -39,13 +39,13 @@ export class ContextElement<DataSource, Item> extends HTMLElement {
         super();
         this.template = null;
         this.renderer = null;
-        this.reducer = (data) => data;
+        this.reducer = null;
     }
 
     /**
      * Get the value of data in this ContextElement
      */
-    get data(): DataSource {
+    get data(): Context {
         return this.dataSource;
     }
 
@@ -53,7 +53,7 @@ export class ContextElement<DataSource, Item> extends HTMLElement {
      * Set the value of ContextElement data
      * @param value
      */
-    set data(value: DataSource) {
+    set data(value: Context) {
         this.setData(() => value);
     }
 
@@ -67,7 +67,7 @@ export class ContextElement<DataSource, Item> extends HTMLElement {
      *
      * @param context
      */
-    public setData = (context: DataSetter<DataSource>) => {
+    public setData = (context: DataSetter<Context>) => {
         this.dataSource = context(this.dataSource);
         this.render();
     };
@@ -117,7 +117,7 @@ export class ContextElement<DataSource, Item> extends HTMLElement {
      * </pre>
      * @param dataSetter
      */
-    protected updateDataCallback = (dataSetter: DataSetter<DataSource>) => {
+    protected updateDataCallback = (dataSetter: DataSetter<Context>) => {
         this.setData(dataSetter);
         const dataChangedEvent: string = composeChangeEventName('data');
         if (dataChangedEvent in this) {

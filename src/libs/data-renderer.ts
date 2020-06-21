@@ -79,6 +79,7 @@ export default class DataRenderer<DataSource, Item> {
 
 }
 
+
 /**
  * activeNodesLookup will return nodes which has the `active-attributes`. Active attributes are the node attribute that contains attributesSuffix.
  * Example of active-attributes value.watch .
@@ -104,7 +105,7 @@ const activeNodesLookup = (attributesSuffix: string[], nodes: ChildNode[]) => {
                 accumulator.add(element);
             }
         }
-        if (!contains(element.tagName, [ARRAY_CONTEXT_ELEMENT_TAG_NAME, CONTEXT_ELEMENT_TAG_NAME])) {
+        if (!contains(element.tagName, [ARRAY_CONTEXT_ELEMENT_TAG_NAME.toUpperCase(), CONTEXT_ELEMENT_TAG_NAME.toUpperCase()])) {
             const childrenNodes = activeNodesLookup(attributesSuffix, Array.from(element.childNodes));
             Array.from(childrenNodes).forEach(childNode => accumulator.add(childNode));
         }

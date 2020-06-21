@@ -39,16 +39,43 @@ import {toggleMissingStateAndProperty} from "./error-message";
  * The last step of the initialization of AttributeEvaluator, is to bind the node against eventStateAction.
  */
 export default class AttributeEvaluator<DataSource, Item> {
+
+    /**
+     * active-node is the actual HTMLElement attached to the document.body
+     */
     private readonly activeNode: ChildNode;
+
+    /**
+     * active-attribute, is a map of node attribute which has either `watch|toggle|action` and its value
+     */
     private readonly activeAttributeValue: Map<string, string>;
+
+    /**
+     * default-attribute, is a map of node attribute which does not have  `watch|toggle|action` and its value
+     */
     private readonly defaultAttributeValue: Map<string, string>;
+
+    /**
+     * DataGetter is a callback function to get the current actual data.
+     */
     private readonly dataGetter: DataGetter<Item>;
+
+    /**
+     * DataUpdateCallback is a callback to inform DataRenderer that a new copy of data is available.
+     */
     private readonly updateData: UpdateDataCallback<DataSource>;
+
+    /**
+     * callback function that is called when an action is triggered by dom event.
+     */
     private readonly reducer: Reducer<DataSource, Item>;
+
     // mapping for watch
     private readonly stateAttributeProperty: Map<string, Map<string, string>> = null;
+
     // mapping for toggle
     private readonly attributeStateProperty: Map<string, Map<string, string>> = null;
+
     // mapping for action
     private readonly eventStateAction: Map<string, Map<string, string>> = null;
 
@@ -92,6 +119,10 @@ export default class AttributeEvaluator<DataSource, Item> {
     }
 }
 
+/**
+ * mapEventStateAction is a function to convert `action` active-attribute to action group by first event, then state.
+ * @param attributeValue is an active attribute
+ */
 const mapEventStateAction = (attributeValue: Map<string, string>) => {
     const eventStateAction: Map<string, Map<string, string>> = new Map<string, Map<string, string>>();
     attributeValue.forEach((value, attributeName) => {
@@ -118,6 +149,10 @@ const mapEventStateAction = (attributeValue: Map<string, string>) => {
     return eventStateAction;
 };
 
+/**
+ * mapStateAttributeProperty is a function to convert `watch` active-attribute to property group by first state, then attribute.
+ * @param attributeValue
+ */
 const mapStateAttributeProperty = (attributeValue: Map<string, string>) => {
     const stateAttributeProperty: Map<string, Map<string, string>> = new Map<string, Map<string, string>>();
     attributeValue.forEach((value, attributeName) => {
@@ -144,7 +179,10 @@ const mapStateAttributeProperty = (attributeValue: Map<string, string>) => {
     return stateAttributeProperty;
 };
 
-
+/**
+ * mapAttributeStateProperty is a function to convert `toggle` active-attribute to property group by first attribute, then state.
+ * @param attributeValue
+ */
 const mapAttributeStateProperty = (attributeValue: Map<string, string>) => {
     const attributeStateProperty: Map<string, Map<string, string>> = new Map<string, Map<string, string>>();
     attributeValue.forEach((value, attributeName) => {
@@ -167,6 +205,10 @@ const mapAttributeStateProperty = (attributeValue: Map<string, string>) => {
     return attributeStateProperty;
 };
 
+/**
+ * populateActiveAttributeValue will extract the active-attributes from the element.
+ * @param element
+ */
 const populateActiveAttributeValue = (element: HTMLElement) => {
     const attributeValue: Map<string, string> = new Map<string, string>();
     element.getAttributeNames().filter(name => contains(name, [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE])).forEach(attributeName => {
@@ -176,8 +218,31 @@ const populateActiveAttributeValue = (element: HTMLElement) => {
     return attributeValue;
 };
 
+/**
+ * InitEventListener is the function to attach `toggle` active-attribute to HTMLElement.addEventListener.
+ * This method requires htmlElement, eventStateAction, dataGetter, updateData and reducer.
+ *
+ * initEventListener will iterate over the eventStateAction map. Based on the event in eventStateAction, the function
+ * will addEventListener to the element.
+ *
+ * When an event is triggered by the element, the eventListener callback will check event.type.
+ * If the event.type is `submit` then the event will be prevented and propagation stopped.
+ *
+ * When element triggered an event, the current data.state will be verified against the eventStateAction.
+ * If the current data.state is not available in the eventStateAction, then the event will be ignored.
+ *
+ * If the current data.state is available in the eventStateAction, or when GlobalState exist in the eventStateAction, then the
+ * updateData callback will invoked to inform DataRenderer that user is triggering an action.
+ *
+ * @param element
+ * @param eventStateAction
+ * @param dataGetter
+ * @param updateData
+ * @param reducer
+ */
 const initEventListener = <DataSource, Item>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Item>, updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource, Item>) => {
     eventStateAction.forEach((stateAction: Map<string, string>, event: string) => {
+
         event = event.startsWith('on') ? event.substring('on'.length, event.length) : event;
         element.addEventListener(event, (event: Event) => {
             if (event.type === 'submit') {
@@ -203,14 +268,16 @@ const initEventListener = <DataSource, Item>(element: HTMLElement, eventStateAct
 };
 
 /**
- * UpdateWatchAttribute is a method that will perform update against node active-attribute. First it will get the current
- * stateAttributeProps based on the data state, then it will iterate over the attributeProps of the data. On each attribute
- * the method will then assign the actual value of the data.property against the element attribute.
+ * UpdateWatchAttribute is a method that will perform update against `watch` active-attribute.
  *
- * If the attribute is also a valid element.property, then this method will set the value of element.property against the
- * data.property value.
+ * UpdateWatchAttribute will get the current attributeProps from stateAttributeProps based on the data.state.
+ * It will iterate over the attribute from the attributeProps.
+ * On each attribute iteration, the method will set the element.attribute based on the value of data[property].
  *
- * If the attribute value is `content`, then the element.innerHTML value will be set against the data.property value.
+ * If the attribute is also a valid element.property, it will set the value of element.property against the
+ * data[property] value either.
+ *
+ * If the attribute value is `content`,  the element.innerHTML value will be set against the data[property] value.
  *
  * @param element : node or also an HTMLElement
  * @param stateAttributeProperty : object that store the mapping of property against state and attribute.
@@ -219,19 +286,19 @@ const initEventListener = <DataSource, Item>(element: HTMLElement, eventStateAct
  */
 const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, Map<string, string>>, dataGetterValue: DataGetterValue<any>, dataState: string) => {
     const data = dataGetterValue.data;
-    const attributePropies = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
-    if (hasNoValue(attributePropies)) {
+    const attributeProps = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
+    if (hasNoValue(attributeProps)) {
         return;
     }
-    attributePropies.forEach((property: string, attribute: string) => {
-        const val = data[property];
+    attributeProps.forEach((property: string, attribute: string) => {
+        const val = extractValue(data, property);
         if (isValidAttribute(attribute)) {
             element.setAttribute(attribute, val);
         }
         if (attribute in element) {
             element[attribute] = val;
             const eventName = composeChangeEventName(attribute);
-            element[eventName] = (val: any) => data[property] = val;
+            element[eventName] = (val: any) => injectValue(data, property, val);
         }
         if (attribute === 'content') {
             element.innerHTML = val;
@@ -240,8 +307,8 @@ const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, 
 };
 
 /**
- * UpdateToggleAttribute is a method that will append the value of attribute based on the data.state. It will iterate over
- * attributeStateProperty, if the current data.state is available in the attributeStateProperty, then the value of the attribute
+ * UpdateToggleAttribute is a method that will toggle the value of attribute based on the data.state. It will iterate over
+ * attributeStateProperty. If the current data.state is available in the attributeStateProperty, then the value of the attribute
  * will be appended against the default attribute value.
  *
  * @param element : node or also an HTMLElement
@@ -281,3 +348,42 @@ function populateDefaultAttributeValue(element: HTMLElement) {
     });
     return attributeValue;
 }
+
+/**
+ * Function to extract the value of json from jsonpath
+ * @param data
+ * @param prop
+ */
+const extractValue = (data: any, prop: string) => {
+    if (hasNoValue(data)) {
+        return data;
+    }
+    try {
+        const evaluate = new Function('data', `return data.${prop};`);
+        return evaluate.call(null, data);
+    } catch (err) {
+        console.warn(data, err.message);
+    }
+    return null;
+};
+
+
+/**
+ * Function to extract the value of json from jsonpath
+ * @param data
+ * @param prop
+ * @param value
+ *
+ */
+const injectValue = (data: any, prop: string, value: any) => {
+    if (hasNoValue(data)) {
+        return;
+    }
+    try {
+        const evaluate = new Function('data', 'value', `data.${prop} = value;`);
+        return evaluate.call(null, data, value);
+    } catch (err) {
+        console.warn(err.message);
+    }
+
+};

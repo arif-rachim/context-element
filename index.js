@@ -8,7 +8,7 @@
     const DATA_WATCH_ATTRIBUTE = 'watch';
     const DATA_ACTION_ATTRIBUTE = 'action';
     const DATA_TOGGLE_ATTRIBUTE = 'toggle';
-    const STATE_PROPERTY = '_state_';
+    const STATE_PROPERTY = '_state';
     const STATE_GLOBAL = '*';
     const DATA_KEY_ATTRIBUTE = 'data.key';
     const HIDE_CLASS = "data-element-hidden";
@@ -42,7 +42,7 @@
     /**
      * Error message to show when data.key is missing in context-array
      */
-    const arrayContextElementMissingDataKey = () => `'<context-array>' requires 'data.key' attribute. Data-key value should refer to the unique attribute of the data.`;
+    const arrayContextElementMissingDataKey = () => `'<context-array>' requires 'data.key' attribute. data-key value should refer to the unique attribute of the data.`;
     /**
      * Error message when toggle active-attributes does not have attribute and state
      */
@@ -114,6 +114,11 @@
             initEventListener(activeNode, this.eventStateAction, dataGetter, updateData, reducer);
         }
     }
+
+    /**
+     * mapEventStateAction is a function to convert `action` active-attribute to action group by first event, then state.
+     * @param attributeValue is an active attribute
+     */
     const mapEventStateAction = (attributeValue) => {
         const eventStateAction = new Map();
         attributeValue.forEach((value, attributeName) => {
@@ -124,12 +129,10 @@
                 if (attributes.length === 1) {
                     event = 'click';
                     state = STATE_GLOBAL;
-                }
-                else if (attributes.length === 2) {
+                } else if (attributes.length === 2) {
                     event = attributes[0];
                     state = STATE_GLOBAL;
-                }
-                else if (attributes.length > 2) {
+                } else if (attributes.length > 2) {
                     event = attributes[0];
                     state = attributes[1];
                 }
@@ -141,6 +144,10 @@
         });
         return eventStateAction;
     };
+    /**
+     * mapStateAttributeProperty is a function to convert `watch` active-attribute to property group by first state, then attribute.
+     * @param attributeValue
+     */
     const mapStateAttributeProperty = (attributeValue) => {
         const stateAttributeProperty = new Map();
         attributeValue.forEach((value, attributeName) => {
@@ -151,12 +158,10 @@
                 if (attributes.length === 1) {
                     attribute = 'content';
                     state = STATE_GLOBAL;
-                }
-                else if (attributes.length === 2) {
+                } else if (attributes.length === 2) {
                     attribute = attributes[0];
                     state = STATE_GLOBAL;
-                }
-                else if (attributes.length > 2) {
+                } else if (attributes.length > 2) {
                     attribute = attributes[0];
                     state = attributes[1];
                 }
@@ -168,6 +173,10 @@
         });
         return stateAttributeProperty;
     };
+    /**
+     * mapAttributeStateProperty is a function to convert `toggle` active-attribute to property group by first attribute, then state.
+     * @param attributeValue
+     */
     const mapAttributeStateProperty = (attributeValue) => {
         const attributeStateProperty = new Map();
         attributeValue.forEach((value, attributeName) => {
@@ -182,14 +191,17 @@
                         attributeStateProperty.set(attribute, new Map());
                     }
                     attributeStateProperty.get(attribute).set(state, value);
-                }
-                else {
+                } else {
                     throw new Error(toggleMissingStateAndProperty());
                 }
             }
         });
         return attributeStateProperty;
     };
+    /**
+     * populateActiveAttributeValue will extract the active-attributes from the element.
+     * @param element
+     */
     const populateActiveAttributeValue = (element) => {
         const attributeValue = new Map();
         element.getAttributeNames().filter(name => contains(name, [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE])).forEach(attributeName => {
@@ -198,6 +210,28 @@
         });
         return attributeValue;
     };
+    /**
+     * InitEventListener is the function to attach `toggle` active-attribute to HTMLElement.addEventListener.
+     * This method requires htmlElement, eventStateAction, dataGetter, updateData and reducer.
+     *
+     * initEventListener will iterate over the eventStateAction map. Based on the event in eventStateAction, the function
+     * will addEventListener to the element.
+     *
+     * When an event is triggered by the element, the eventListener callback will check event.type.
+     * If the event.type is `submit` then the event will be prevented and propagation stopped.
+     *
+     * When element triggered an event, the current data.state will be verified against the eventStateAction.
+     * If the current data.state is not available in the eventStateAction, then the event will be ignored.
+     *
+     * If the current data.state is available in the eventStateAction, or when GlobalState exist in the eventStateAction, then the
+     * updateData callback will invoked to inform DataRenderer that user is triggering an action.
+     *
+     * @param element
+     * @param eventStateAction
+     * @param dataGetter
+     * @param updateData
+     * @param reducer
+     */
     const initEventListener = (element, eventStateAction, dataGetter, updateData, reducer) => {
         eventStateAction.forEach((stateAction, event) => {
             event = event.startsWith('on') ? event.substring('on'.length, event.length) : event;
@@ -224,14 +258,16 @@
         });
     };
     /**
-     * UpdateWatchAttribute is a method that will perform update against node active-attribute. First it will get the current
-     * stateAttributeProps based on the data state, then it will iterate over the attributeProps of the data. On each attribute
-     * the method will then assign the actual value of the data.property against the element attribute.
+     * UpdateWatchAttribute is a method that will perform update against `watch` active-attribute.
      *
-     * If the attribute is also a valid element.property, then this method will set the value of element.property against the
-     * data.property value.
+     * UpdateWatchAttribute will get the current attributeProps from stateAttributeProps based on the data.state.
+     * It will iterate over the attribute from the attributeProps.
+     * On each attribute iteration, the method will set the element.attribute based on the value of data[property].
      *
-     * If the attribute value is `content`, then the element.innerHTML value will be set against the data.property value.
+     * If the attribute is also a valid element.property, it will set the value of element.property against the
+     * data[property] value either.
+     *
+     * If the attribute value is `content`,  the element.innerHTML value will be set against the data[property] value.
      *
      * @param element : node or also an HTMLElement
      * @param stateAttributeProperty : object that store the mapping of property against state and attribute.
@@ -240,19 +276,19 @@
      */
     const updateWatchAttribute = (element, stateAttributeProperty, dataGetterValue, dataState) => {
         const data = dataGetterValue.data;
-        const attributePropies = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
-        if (hasNoValue(attributePropies)) {
+        const attributeProps = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
+        if (hasNoValue(attributeProps)) {
             return;
         }
-        attributePropies.forEach((property, attribute) => {
-            const val = data[property];
+        attributeProps.forEach((property, attribute) => {
+            const val = extractValue(data, property);
             if (isValidAttribute(attribute)) {
                 element.setAttribute(attribute, val);
             }
             if (attribute in element) {
                 element[attribute] = val;
                 const eventName = composeChangeEventName(attribute);
-                element[eventName] = (val) => data[property] = val;
+                element[eventName] = (val) => injectValue(data, property, val);
             }
             if (attribute === 'content') {
                 element.innerHTML = val;
@@ -260,8 +296,8 @@
         });
     };
     /**
-     * UpdateToggleAttribute is a method that will append the value of attribute based on the data.state. It will iterate over
-     * attributeStateProperty, if the current data.state is available in the attributeStateProperty, then the value of the attribute
+     * UpdateToggleAttribute is a method that will toggle the value of attribute based on the data.state. It will iterate over
+     * attributeStateProperty. If the current data.state is available in the attributeStateProperty, then the value of the attribute
      * will be appended against the default attribute value.
      *
      * @param element : node or also an HTMLElement
@@ -286,7 +322,6 @@
             }
         });
     };
-
     /**
      * PopulateDefaultAttributeValue will iterate over all element attributeNames, and return them in the form of Map.
      * @param element : active node or the HTMLElement
@@ -298,6 +333,40 @@
         });
         return attributeValue;
     }
+
+    /**
+     * Function to extract the value of json from jsonpath
+     * @param data
+     * @param prop
+     */
+    const extractValue = (data, prop) => {
+        if (hasNoValue(data)) {
+            return data;
+        }
+        try {
+            const evaluate = new Function('data', `return data.${prop};`);
+            return evaluate.call(null, data);
+        } catch (err) {
+            console.warn(data, err.message);
+        }
+        return null;
+    };
+    /**
+     * Function to extract the value of json from jsonpath
+     * @param data
+     * @param prop
+     */
+    const injectValue = (data, prop, value) => {
+        if (hasNoValue(data)) {
+            return;
+        }
+        try {
+            const evaluate = new Function('data', 'value', `data.${prop} = value;`);
+            return evaluate.call(null, data, value);
+        } catch (err) {
+            console.warn(err.message);
+        }
+    };
 
     /**
      * DataRenderer is an object that store cloned ContextElement.template and store it in 'nodes' property.
@@ -361,7 +430,7 @@
                     accumulator.add(element);
                 }
             }
-            if (!contains(element.tagName, [ARRAY_CONTEXT_ELEMENT_TAG_NAME, CONTEXT_ELEMENT_TAG_NAME])) {
+            if (!contains(element.tagName, [ARRAY_CONTEXT_ELEMENT_TAG_NAME.toUpperCase(), CONTEXT_ELEMENT_TAG_NAME.toUpperCase()])) {
                 const childrenNodes = activeNodesLookup(attributesSuffix, Array.from(element.childNodes));
                 Array.from(childrenNodes).forEach(childNode => accumulator.add(childNode));
             }
@@ -492,7 +561,7 @@
             };
             this.template = null;
             this.renderer = null;
-            this.reducer = (data) => data;
+            this.reducer = null;
         }
         /**
          * Get the value of data in this ContextElement
