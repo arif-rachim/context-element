@@ -128,12 +128,14 @@ export class ContextElement<DataSource, Item> extends HTMLElement {
     /**
      * render method is invoked by the component when it received a new data-update.
      * First it will create DataRenderer object if its not exist.
-     * DataRenderer require ContextElement template, updateDataCallback, and reducer.
+     * DataRenderer require ContextElement cloned template , updateDataCallback, and reducer.
+     *
+     * `cloned template` will be used by the DataRenderer as the real node that will be attached to document body.
+     * `updateDataCallback` will be used by the DataRenderer to inform the ContextElement if there's new data-update performed by user action.
+     * `reducer` is an function that will return a new copy of the data.Reducer is invoked when there's user action/
+     *
      * Each time render method is invoked, a new callback to get the latest data (dataGetter) is created and passed to
      * DataRenderer render method.
-     *
-     * DataRenderer then will use the dataGetter to call reducer to get a new updated copy of the data, update the template
-     * and call the updateDataCallback to update the original data with a new copy.
      *
      */
     protected render = () => {

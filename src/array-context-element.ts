@@ -9,7 +9,7 @@ import DataRenderer from "./libs/data-renderer";
  *
  * <pre>
  *     <code>
- *         <context-array id="my-element"  data-key="id">
+ *         <context-array id="my-element"  data.key="id">
  *             <div watch="name"></div>
  *             <div watch="city"></div>
  *             <div watch="email"></div>
@@ -77,7 +77,7 @@ export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
     }
 
     /**
-     * initAttribute store the data-key attribute value to dataKeyField property.
+     * initAttribute store the data.key attribute value to dataKeyField property.
      */
     protected initAttribute = () => {
         this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE);
@@ -87,14 +87,11 @@ export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
      * render method is invoked by the component when it received a new array-update.
      *
      * It will iterate the array and get the key value of the data.
-     * It will create a DataRenderer if there is no dataRenderer exist against the key.
-     * DataRenderer require ContextElement template, updateDataCallback, and reducer.
+     * It will create a DataRenderer if there is no dataRenderer exist.
+     * The newly created DataRenderer then stored in the ContextElement renderers Map object along with the key.
      *
-     * Each time render method is invoked, a new callback to get the latest data (dataGetter) is created and passed to
-     * DataRenderer render method.
-     *
-     * DataRenderer then will use the dataGetter to call reducer to get a new updated copy of the data, update the template
-     * and call the updateDataCallback to update the original data with a new copy.
+     * Each time ContexElement.render method is invoked, a new callback to get the latest data (dataGetter) is created and passed to
+     * DataRenderer.render method.
      *
      */
     protected render = () => {
@@ -130,7 +127,10 @@ export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
     };
 
     /**
-     * Function to remove keys that is no longer exist in the dataSource.
+     * Function to remove keys that is no longer exist in the ContextElement.renderers.
+     * When ContextElement received new data (dataSource),it will check the obsolate keys in the ContextElement.renderers.
+     * The obsolate keys along with the DataRenderer attach to it, removed from the ContextElement.renderers, and the template
+     * node removed from the document.body.
      */
     private removeExpiredData = () => {
         const renderers: Map<string, Renderer> = this.renderers;

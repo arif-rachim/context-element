@@ -16,7 +16,10 @@ import {
 import isValidAttribute from "./attribute-validator";
 import {toggleMissingStateAndProperty} from "./error-message";
 
-
+/**
+ *
+ * @param element
+ */
 function populateDefaultAttributeValue(element: HTMLElement) {
     const attributeValue: Map<string, string> = new Map<string, string>();
     element.getAttributeNames().forEach(attributeName => {

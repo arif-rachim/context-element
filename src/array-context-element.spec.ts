@@ -2,7 +2,7 @@ import {ArrayContextElement} from './array-context-element';
 import './index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
-import {STATE_PROPERTY} from "./types";
+import {DATA_KEY_ATTRIBUTE, STATE_PROPERTY} from "./types";
 
 const createArrayContextElement = (innerHTML?: string) => {
     const randomId = uuid();
@@ -120,7 +120,7 @@ test('it should render `watch` according to the state', (done) => {
 
 test('It should bind event against node', (done) => {
     const arrayContextElement = createArrayContextElement('<input click.action="INPUT_CLICKED" >');
-    arrayContextElement.setAttribute('data-key', 'userId');
+    arrayContextElement.setAttribute(DATA_KEY_ATTRIBUTE, 'userId');
     arrayContextElement.onMounted(() => {
         arrayContextElement.data = generateRandomUser(5);
         expect(arrayContextElement.childNodes.length).toEqual(5);
@@ -136,7 +136,7 @@ test('It should update the data when click event triggered',(done) => {
 <button action="SET_SIMPLE" class="simple">Click</button>
 <button action="SET_COMPLETE" class="complete">Click</button>
 `);
-    arrayContextElement.setAttribute('data-key','userId');
+    arrayContextElement.setAttribute(DATA_KEY_ATTRIBUTE, 'userId');
     const users = generateRandomUser(3);
     arrayContextElement.data = users;
     arrayContextElement.reducer = (context,action) => {
@@ -192,7 +192,8 @@ test('It should toggle when user change the data',(done)=>{
         }
         return context;
     }
-    arrayContextElement.setAttribute('data-key','userId');
+
+    arrayContextElement.setAttribute(DATA_KEY_ATTRIBUTE, 'userId');
     arrayContextElement.data = generateRandomUser(5);
     arrayContextElement.onMounted(() => {
         expect(arrayContextElement.childNodes.length).toBe(20);
