@@ -16,19 +16,12 @@ import {
 import isValidAttribute from "./attribute-validator";
 import {toggleMissingStateAndProperty} from "./error-message";
 
+
 /**
+ * AttributeEvaluator is a class that stores information about node that have active-attributes.
+ * The AttributeEvaluator is called by the DataRenderer object when DataRenderer.render is executed.
  *
- * @param element
  */
-function populateDefaultAttributeValue(element: HTMLElement) {
-    const attributeValue: Map<string, string> = new Map<string, string>();
-    element.getAttributeNames().forEach(attributeName => {
-        attributeValue.set(attributeName, element.getAttribute(attributeName));
-    });
-    return attributeValue;
-}
-
-
 export default class AttributeEvaluator<DataSource, Item> {
     private readonly activeNode: ChildNode;
     private readonly activeAttributeValue: Map<string, string>;
@@ -220,3 +213,16 @@ const updateToggleAttribute = (element: HTMLElement, attributeStateProperty: Map
         }
     });
 };
+
+
+/**
+ *
+ * @param element
+ */
+function populateDefaultAttributeValue(element: HTMLElement) {
+    const attributeValue: Map<string, string> = new Map<string, string>();
+    element.getAttributeNames().forEach(attributeName => {
+        attributeValue.set(attributeName, element.getAttribute(attributeName));
+    });
+    return attributeValue;
+}

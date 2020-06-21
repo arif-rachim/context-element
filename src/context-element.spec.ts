@@ -1,5 +1,5 @@
 import {ContextElement} from './context-element';
-import './index';
+import '../index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
 
@@ -61,7 +61,6 @@ content.two.watch="picture"></div>
     contextElement.onMounted(() => {
         expect((contextElement.firstChild as HTMLDivElement).innerHTML).toBe(contextElement.data.name);
         let data = users[1];
-        //data["@state"] = 'one';
         contextElement.data = data;
         expect((contextElement.firstChild as HTMLDivElement).innerHTML).toBe(users[1].name);
         contextElement.data = users[3];

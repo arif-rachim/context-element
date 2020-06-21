@@ -6,12 +6,15 @@
     const hasNoValue = (param) => !hasValue(param);
     const contains = (text, texts) => texts.reduce((acc, txt) => acc || text.indexOf(txt) >= 0, false);
     const DATA_WATCH_ATTRIBUTE = 'watch';
-    const DATA_KEY_ATTRIBUTE = 'data-key';
     const DATA_ACTION_ATTRIBUTE = 'action';
     const DATA_TOGGLE_ATTRIBUTE = 'toggle';
     const STATE_PROPERTY = '@state';
     const STATE_GLOBAL = '*';
+    const DATA_KEY_ATTRIBUTE = 'data.key';
     const HIDE_CLASS = "data-element-hidden";
+    const style = document.createElement('style');
+    style.innerHTML = `.${HIDE_CLASS} {display: none !important;}`;
+    document.head.appendChild(style);
 
     /**
      * Function to remove empty text node.
@@ -26,20 +29,29 @@
     }
 
     const ignoredAttributes = ['data', 'reducer'];
+
+    /**
+     * isValidAttribute return if there is active-attribute to be ignore by the ContextElement.
+     * @param attributeName
+     */
     function isValidAttribute(attributeName) {
         return ignoredAttributes.indexOf(attributeName) < 0;
     }
 
-    const arrayContextElementMissingDataKey = () => `'<context-array>' requires 'data-key' attribute. Data-key value should refer to the unique attribute of the data.`;
+    /**
+     * Error message to show when data.key is missing in context-array
+     */
+    const arrayContextElementMissingDataKey = () => `'<context-array>' requires 'data.key' attribute. Data-key value should refer to the unique attribute of the data.`;
+    /**
+     * Error message when toggle active-attributes does not have attribute and state
+     */
     const toggleMissingStateAndProperty = () => `toggle require 3 parameters separated with dot(.) : ' eg <div class="my-div" class.disabled.toggle="disabledCss"></div>`;
 
-    function populateDefaultAttributeValue(element) {
-        const attributeValue = new Map();
-        element.getAttributeNames().forEach(attributeName => {
-            attributeValue.set(attributeName, element.getAttribute(attributeName));
-        });
-        return attributeValue;
-    }
+    /**
+     * AttributeEvaluator is a class that stores information about node that have active-attributes.
+     * The AttributeEvaluator is called by the DataRenderer object when DataRenderer.render is executed.
+     *
+     */
     class AttributeEvaluator {
         constructor(activeNode, dataGetter, updateData, reducer) {
             // mapping for watch
@@ -219,8 +231,42 @@
         });
     };
 
+    /**
+     *
+     * @param element
+     */
+    function populateDefaultAttributeValue(element) {
+        const attributeValue = new Map();
+        element.getAttributeNames().forEach(attributeName => {
+            attributeValue.set(attributeName, element.getAttribute(attributeName));
+        });
+        return attributeValue;
+    }
+
+    /**
+     * DataRenderer is an object that store cloned ContextElement.template and store it in 'nodes' property.
+     * During initialization, DataRenderer scanned for the active-nodes against nodes property.
+     * active-nodes are the node that contain active-attributes such as `watch|toggle|action`.
+     *
+     * When the active nodes identifed, DataRenderer create AttributeEvaluator against each active-node, and store them in
+     * attributeEvaluators property.
+     *
+     * When DataRenderer.render invoked by the ContextElement, DataRenderer iterate all ActiveAttributes and call
+     * ActiveAttribte.render method.
+     */
     class DataRenderer {
+        /**
+         * Constructor to setup the DataRenderer initialization.
+         *
+         * @param nodes is a cloned of ContextElement.template
+         * @param updateData
+         * @param reducer
+         */
         constructor(nodes, updateData, reducer) {
+            /**
+             * Render with iterate all the AttributeEvaluators and call the AttributeEvaluator.render
+             * @param getter
+             */
             this.render = (getter) => {
                 this.dataGetter = getter;
                 this.attributeEvaluators.forEach((attributeEvaluator) => attributeEvaluator.render());
@@ -234,6 +280,20 @@
             this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, dataGetter, this.updateData, this.reducer));
         }
     }
+
+    /**
+     * activeNodesLookup will return nodes which has the `active-attributes`. Active attributes are the node attribute that contains attributesSuffix.
+     * Example of active-attributes value.watch .
+     * <pre>
+     *     <code>
+     *         <form submit.action="ADD_DATA">
+     *              <input value.watch="name" >
+     *         </form>
+     *     </code>
+     * </pre>
+     * @param attributesSuffix watch|toggle|action
+     * @param nodes filter
+     */
     const activeNodesLookup = (attributesSuffix, nodes) => {
         return nodes.filter(noEmptyTextNode()).reduce((accumulator, node) => {
             if (!(node instanceof HTMLElement)) {
@@ -328,12 +388,14 @@
             /**
              * render method is invoked by the component when it received a new data-update.
              * First it will create DataRenderer object if its not exist.
-             * DataRenderer require ContextElement template, updateDataCallback, and reducer.
+             * DataRenderer require ContextElement cloned template , updateDataCallback, and reducer.
+             *
+             * `cloned template` will be used by the DataRenderer as the real node that will be attached to document body.
+             * `updateDataCallback` will be used by the DataRenderer to inform the ContextElement if there's new data-update performed by user action.
+             * `reducer` is an function that will return a new copy of the data.Reducer is invoked when there's user action/
+             *
              * Each time render method is invoked, a new callback to get the latest data (dataGetter) is created and passed to
              * DataRenderer render method.
-             *
-             * DataRenderer then will use the dataGetter to call reducer to get a new updated copy of the data, update the template
-             * and call the updateDataCallback to update the original data with a new copy.
              *
              */
             this.render = () => {
@@ -377,14 +439,12 @@
             this.renderer = null;
             this.reducer = (data) => data;
         }
-
         /**
          * Get the value of data in this ContextElement
          */
         get data() {
             return this.dataSource;
         }
-
         /**
          * Set the value of ContextElement data
          * @param value
@@ -392,7 +452,6 @@
         set data(value) {
             this.setData(() => value);
         }
-
         /**
          * connectedCallback is invoked each time the custom element is appended into a document-connected element.
          * When connectedCallback invoked, it will initialize the active attribute, populate the template, and call
@@ -423,7 +482,7 @@
      *
      * <pre>
      *     <code>
-     *         <context-array id="my-element"  data-key="id">
+     *         <context-array id="my-element"  data.key="id">
      *             <div watch="name"></div>
      *             <div watch="city"></div>
      *             <div watch="email"></div>
@@ -441,14 +500,36 @@
      *
      */
     class ArrayContextElement extends ContextElement {
+        /**
+         * Set the default dataKeyPicker using callback that return value of object dataKeyField.
+         */
         constructor() {
             super();
+            /**
+             * DataKeyPicker is a callback function to get the string key value of a data.
+             *
+             * @param dataKeyPicker
+             */
             this.setDataKeyPicker = (dataKeyPicker) => {
                 this.dataKeyPicker = dataKeyPicker;
             };
+            /**
+             * initAttribute store the data.key attribute value to dataKeyField property.
+             */
             this.initAttribute = () => {
                 this.dataKeyField = this.getAttribute(DATA_KEY_ATTRIBUTE);
             };
+            /**
+             * render method is invoked by the component when it received a new array-update.
+             *
+             * It will iterate the array and get the key value of the data.
+             * It will create a DataRenderer if there is no dataRenderer exist.
+             * The newly created DataRenderer then stored in the ContextElement renderers Map object along with the key.
+             *
+             * Each time ContexElement.render method is invoked, a new callback to get the latest data (dataGetter) is created and passed to
+             * DataRenderer.render method.
+             *
+             */
             this.render = () => {
                 const dataSource = this.dataSource;
                 const template = this.template;
@@ -475,11 +556,17 @@
                         }
                         anchorNode = node;
                     }
-                    const dataGetter = () => ({ data, key: dataKey, index: (dpLength - index) });
+                    const dataGetter = () => ({data, key: dataKey, index: (dpLength - index)});
                     itemRenderer.render(dataGetter);
                 });
                 this.lastChild.remove();
             };
+            /**
+             * Function to remove keys that is no longer exist in the ContextElement.renderers.
+             * When ContextElement received new data (dataSource),it will check the obsolate keys in the ContextElement.renderers.
+             * The obsolate keys along with the DataRenderer attach to it, removed from the ContextElement.renderers, and the template
+             * node removed from the document.body.
+             */
             this.removeExpiredData = () => {
                 const renderers = this.renderers;
                 const dataSource = this.dataSource;
@@ -500,11 +587,22 @@
             };
             this.renderers = new Map();
             this.dataKeyPicker = defaultDataKeyPicker;
-            this.reducer = (data) => data;
         }
+
+        /**
+         * Observed attributes in context element
+         */
         static get observedAttributes() {
             return [DATA_KEY_ATTRIBUTE];
         }
+
+        /**
+         * update the dataKeyField if theres a new change in the attribute.
+         *
+         * @param name of the attribute
+         * @param oldValue
+         * @param newValue
+         */
         attributeChangedCallback(name, oldValue, newValue) {
             if (name === DATA_KEY_ATTRIBUTE) {
                 this.dataKeyField = newValue;
@@ -512,9 +610,6 @@
         }
     }
 
-    const style = document.createElement('style');
-    style.innerHTML = `.${HIDE_CLASS} {display: none !important;}`;
-    document.head.appendChild(style);
     customElements.define('array-context-element', ArrayContextElement);
     customElements.define('context-element', ContextElement);
 

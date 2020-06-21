@@ -20,3 +20,7 @@ export const STATE_GLOBAL = '*';
 export const DATA_KEY_ATTRIBUTE = 'data.key';
 export const IGNORE_DATA: any = "IGNORE_DATA";
 export const HIDE_CLASS: string = "data-element-hidden";
+
+const style = document.createElement('style');
+style.innerHTML = `.${HIDE_CLASS} {display: none !important;}`;
+document.head.appendChild(style);
