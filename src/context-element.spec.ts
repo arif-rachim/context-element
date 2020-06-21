@@ -3,6 +3,10 @@ import '../index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
 
+/**
+ *
+ * @param innerHTML
+ */
 const createContextElement = (innerHTML?: string) => {
     const randomId = uuid();
     const element = document.createElement('context-element');

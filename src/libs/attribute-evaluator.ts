@@ -21,6 +21,22 @@ import {toggleMissingStateAndProperty} from "./error-message";
  * AttributeEvaluator is a class that stores information about node that have active-attributes.
  * The AttributeEvaluator is called by the DataRenderer object when DataRenderer.render is executed.
  *
+ * AttributeEvaluator require the activeNode,dataGetter,updateDataCallback, and the reducer function from the DataRenderer.
+ *
+ * When the AttributeEvaluator initiated, the attribute evaluator will extract all the active-attributes from active-node and store them in
+ * `activeAttributeValue`.
+ *
+ * Once the activeAttribute extracted from the node, AttributeEvaluator will remove those attributes from the node, remaining
+ * only non-active attributes.
+ *
+ * The non active attributes then will be extracted from the node, and stored in the `defaultAttributeValue` property.
+ *
+ * The next step of the initialization process it to extract the active attributes and group them into 3 different map.
+ * 1. stateAttributeProperty :  mapping of `data.property` group by first state then attribute.
+ * 2. attributeStateProperty : mapping of `data.property` group by first attribute then state.
+ * 3. eventStateAction : mapping of action group by first event then state.
+ *
+ * The last step of the initialization of AttributeEvaluator, is to bind the node against eventStateAction.
  */
 export default class AttributeEvaluator<DataSource, Item> {
     private readonly activeNode: ChildNode;
@@ -36,6 +52,16 @@ export default class AttributeEvaluator<DataSource, Item> {
     // mapping for action
     private readonly eventStateAction: Map<string, Map<string, string>> = null;
 
+    /**
+     * Constructor will perform initialization by constructing activeAttributeValue, defaultAttributeValue, eventStateAction,
+     * stateAttributeProperty and attributeStateProperty.
+     * The last process would be initialization of event listener.
+     *
+     * @param activeNode : node that contains active-attribute.
+     * @param dataGetter : callback function to return current data.
+     * @param updateData : callback function to inform DataRenderer that a new data is created because of user action.
+     * @param reducer : function to map data into a new one because of user action.
+     */
     constructor(activeNode: ChildNode, dataGetter: DataGetter<Item>, updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource, Item>) {
         this.activeNode = activeNode;
         this.dataGetter = dataGetter;
@@ -49,6 +75,10 @@ export default class AttributeEvaluator<DataSource, Item> {
         initEventListener(activeNode as HTMLElement, this.eventStateAction, dataGetter, updateData, reducer);
     }
 
+    /**
+     * Render method will be invoked my DataRenderer.render. Render method will perform 2 major things,
+     * update active-attribute `watch:updateAttributeWatch`  and `toggle:updateToggleAttribute`.
+     */
     public render = () => {
         const element = this.activeNode as any;
         const stateAttributeProperty = this.stateAttributeProperty;
@@ -172,13 +202,28 @@ const initEventListener = <DataSource, Item>(element: HTMLElement, eventStateAct
     });
 };
 
+/**
+ * UpdateWatchAttribute is a method that will perform update against node active-attribute. First it will get the current
+ * stateAttributeProps based on the data state, then it will iterate over the attributeProps of the data. On each attribute
+ * the method will then assign the actual value of the data.property against the element attribute.
+ *
+ * If the attribute is also a valid element.property, then this method will set the value of element.property against the
+ * data.property value.
+ *
+ * If the attribute value is `content`, then the element.innerHTML value will be set against the data.property value.
+ *
+ * @param element : node or also an HTMLElement
+ * @param stateAttributeProperty : object that store the mapping of property against state and attribute.
+ * @param dataGetterValue : object that get the current value of the data.
+ * @param dataState : state value of the object.
+ */
 const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, Map<string, string>>, dataGetterValue: DataGetterValue<any>, dataState: string) => {
     const data = dataGetterValue.data;
-    const stateAttributeProps = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
-    if (hasNoValue(stateAttributeProps)) {
+    const attributePropies = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
+    if (hasNoValue(attributePropies)) {
         return;
     }
-    stateAttributeProps.forEach((property: string, attribute: string) => {
+    attributePropies.forEach((property: string, attribute: string) => {
         const val = data[property];
         if (isValidAttribute(attribute)) {
             element.setAttribute(attribute, val);
@@ -194,6 +239,16 @@ const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, 
     });
 };
 
+/**
+ * UpdateToggleAttribute is a method that will append the value of attribute based on the data.state. It will iterate over
+ * attributeStateProperty, if the current data.state is available in the attributeStateProperty, then the value of the attribute
+ * will be appended against the default attribute value.
+ *
+ * @param element : node or also an HTMLElement
+ * @param attributeStateProperty : object that store the mapping of property against attribute and state.
+ * @param dataState : state value of the object.
+ * @param defaultAttributeValue : default value of the active-attribute toggle.
+ */
 const updateToggleAttribute = (element: HTMLElement, attributeStateProperty: Map<string, Map<string, string>>, dataState: any, defaultAttributeValue: Map<string, string>) => {
     attributeStateProperty.forEach((stateProperty: Map<string, string>, attribute: string) => {
         const attributeValue: string[] = [];
@@ -216,8 +271,8 @@ const updateToggleAttribute = (element: HTMLElement, attributeStateProperty: Map
 
 
 /**
- *
- * @param element
+ * PopulateDefaultAttributeValue will iterate over all element attributeNames, and return them in the form of Map.
+ * @param element : active node or the HTMLElement
  */
 function populateDefaultAttributeValue(element: HTMLElement) {
     const attributeValue: Map<string, string> = new Map<string, string>();

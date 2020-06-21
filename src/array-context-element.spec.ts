@@ -6,7 +6,7 @@ import {DATA_KEY_ATTRIBUTE, STATE_PROPERTY} from "./types";
 
 const createArrayContextElement = (innerHTML?: string) => {
     const randomId = uuid();
-    const element = document.createElement('array-context-element');
+    const element = document.createElement('context-array');
     element.innerHTML = innerHTML;
     element.setAttribute('id', randomId);
     document.body.append(element);
