@@ -5,8 +5,6 @@
   "main": "index.js",
   "keywords": [
     "webcomponent",
-    "react",
-    "angular",
     "html"
   ],
   "scripts": {
