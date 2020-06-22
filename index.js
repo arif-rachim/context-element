@@ -114,7 +114,6 @@
             initEventListener(activeNode, this.eventStateAction, dataGetter, updateData, reducer);
         }
     }
-
     /**
      * mapEventStateAction is a function to convert `action` active-attribute to action group by first event, then state.
      * @param attributeValue is an active attribute
@@ -333,7 +332,6 @@
         });
         return attributeValue;
     }
-
     /**
      * Function to extract the value of json from jsonpath
      * @param data
@@ -355,6 +353,8 @@
      * Function to extract the value of json from jsonpath
      * @param data
      * @param prop
+     * @param value
+     *
      */
     const injectValue = (data, prop, value) => {
         if (hasNoValue(data)) {
