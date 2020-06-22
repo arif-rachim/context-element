@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://unpkg.com/context-element"></script>
+</head>
+<body>
+    <context-element id="my-element">
+        <input type="text" input.action="SET_NAME">
+        <div watch="name"></div>
+    </context-element>
+    <script>
+        const el = document.getElementById('my-element');
+
+        el.data = { name : '' };
+
+        el.reducer = (data,action) => {
+            const {type,event} = action;
+            switch (type) {
+                case 'SET_NAME' : {
+                    const name = event.target.value;
+                    return {...data,name}
+                }
+            }
+            return {...data}
+        }
+    </script>
+</body>
+</html>

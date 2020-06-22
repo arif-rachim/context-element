@@ -10,6 +10,7 @@ The framework will organize how pages are displayed based on the template that w
 
 **_`context-element`_** have similarities as frameworks, but context-elements are not frameworks engine, rather than simple **`HTMLElement`** that can organize how data is displayed based on templates.
 
+
 ```html
 <html>
     <head>
@@ -33,3 +34,81 @@ The framework will organize how pages are displayed based on the template that w
     </body>
 </html>
 ```
+
+## How it works
+context-element has a property called `data`. The `data` property in context-element is also known as the `context-data`.
+When we supply values to the context-element `context-data`, the context-element will automatically re-render its template. 
+
+To set `context-data` values, 
+We can do it _imperatively_ via javascript 
+```javascript
+contextElement.data = { time:new Date() }
+```
+
+Or  _declaratively_ using context-element  `data` attribute
+```html
+<context-element data.watch="mydata">...</context-element>
+```
+note: We can only use declarative if the context-element is not a root element
+
+In the context element, we can write a template which is then used to render the data we provide.
+To bind the attribute or innerHTML of the template, we can use the `watch` attribute.
+
+```html
+<context-element >
+
+    <!-- we can use the watch attribute to bind to data.time --> 
+    <div watch="time"></div>
+
+    <!-- we can also bind to attributes by adding the `watch` keyword --> 
+    <input type="text" value.watch="time">
+    
+</context-element>
+```
+
+##watch
+The keyword `watch` is used by context-components to indicate that an attribute is an active-attribute. Besides `watch`
+active-attribute in context-components also marked with the `toggle` and` action` keywords.
+
+In the following example `<input value.watch =" time ">` means that the context-element will set the `value` attribute with a value
+from the `time` property of the data (`data.time`).
+
+##action
+The keyword action used by context-component to indicate an attribute is an event listener.
+To consume the event, we must use the `reducer` function. Reducer is a pure function that is
+receive the previous data and action, and return the next data. `(previousData, action) => nextData`.
+
+Following is an example of how the `action` attribute is used
+```html
+<context-element id="my-element">
+    <input type="text" input.action="SET_NAME">
+    <div watch="name"></div>
+</context-element>
+```
+
+```javascript
+const el = document.getElementById('my-element');
+
+el.data = { name : '' };
+
+el.reducer = (data,action) => {
+    const {type,event} = action;
+    switch (type) {
+        case 'SET_NAME' : {
+            const name = event.target.value;
+            return {...data,name}
+        }
+    }
+    return {...data}
+}
+```
+
+#_context-array_
+To render an array, we can use `context-array`. context-array is the tag-name of ArrayContextElement class.
+ArrayContextElement is a subclass of ContextElement. What distinguishes ArrayContextElement from ContextElement is
+type of data. ContextElement can only accept `Object` type data. Whereas ArrayContextElement can only accept
+`Array` type data.
+
+ArrayContextElement requires the `data.key` attribute. The `data.key` attribute must contain the name of the property of the data, which has a unique value.
+This data.key will then be used as a marker when there is a new array accepted by the data property, to let ArrayContextElement
+to decide whether the active-node should be discarded or updated in the dom.
