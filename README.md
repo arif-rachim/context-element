@@ -51,29 +51,29 @@ Or  _declaratively_ using context-element  `data` attribute
 ```
 note: We can only use declarative if the context-element is not a root element
 
-In the context element, we can write a template which is then used to render the data we provide.
+Inside the context element, we can write a template which is then used to render the data we provide.
 To bind the attribute or innerHTML of the template, we can use the `watch` attribute.
 
 ```html
 <context-element >
 
-    <!-- we can use the watch attribute to bind to data.time --> 
+    <!-- we can use the watch attribute to bind innerHTML with data.time --> 
     <div watch="time"></div>
 
-    <!-- we can also bind to attributes by adding the `watch` keyword --> 
+    <!-- we can also bind to any html attribute by adding the `watch` keyword --> 
     <input type="text" value.watch="time">
     
 </context-element>
 ```
 
-##watch
+## watch
 The keyword `watch` is used by context-components to indicate that an attribute is an active-attribute. Besides `watch`
 active-attribute in context-components also marked with the `toggle` and` action` keywords.
 
 In the following example `<input value.watch =" time ">` means that the context-element will set the `value` attribute with a value
 from the `time` property of the data (`data.time`).
 
-##action
+## action
 The keyword action used by context-component to indicate an attribute is an event listener.
 To consume the event, we must use the `reducer` function. Reducer is a pure function that is
 receive the previous data and action, and return the next data. `(previousData, action) => nextData`.
@@ -103,7 +103,7 @@ el.reducer = (data,action) => {
 }
 ```
 
-#_context-array_
+# _context-array_
 To render an array, we can use `context-array`. context-array is the tag-name of ArrayContextElement class.
 ArrayContextElement is a subclass of ContextElement. What distinguishes ArrayContextElement from ContextElement is
 type of data. ContextElement can only accept `Object` type data. Whereas ArrayContextElement can only accept
