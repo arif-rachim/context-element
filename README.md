@@ -9,3 +9,27 @@ To build interactive html pages and display data dynamically, we can use a front
 The framework will organize how pages are displayed based on the template that we define as components.
 
 **_`context-element`_** have similarities as frameworks, but context-elements are not frameworks engine, rather than simple **`HTMLElement`** that can organize how data is displayed based on templates.
+
+```html
+<html>
+    <head>
+        <!-- here we import the context-element -->
+        <script src="https://unpkg.com/context-element"></script>
+    </head>
+    <body>
+        <context-element id="myElement">
+            <div>Current time is</div>
+            <!-- attribute watch is watching data `time` property -->
+            <div watch="time"></div>
+        </context-element>
+        <script>
+            const el = document.getElementById('myElement');
+            setInterval(() => {
+                el.data = {
+                    time : new Date().toLocaleTimeString()
+                }
+            });
+        </script>
+    </body>
+</html>
+```

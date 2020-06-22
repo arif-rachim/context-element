@@ -1,0 +1,19 @@
+<html>
+    <head>
+        <script src="https://unpkg.com/context-element"></script>
+    </head>
+    <body>
+        <context-element id="contextElement">
+            <div>Current Time is :</div>
+            <div watch="time"></div>
+        </context-element>
+        <script>
+            const el = document.getElementById('contextElement');
+            setInterval(() => {
+                el.data = {
+                    time : new Date().toLocaleTimeString()
+                }
+            });
+        </script>
+    </body>
+</html>
