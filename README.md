@@ -104,7 +104,7 @@ el.reducer = (data,action) => {
 ```
 
 # _context-array_
-To render an array, we can use `context-array`. context-array is the tag-name of ArrayContextElement class.
+To render an array, we can use `context-array`. `context-array` is the tag-name of ArrayContextElement class.
 ArrayContextElement is a subclass of ContextElement. What distinguishes ArrayContextElement from ContextElement is
 type of data. ContextElement can only accept `Object` type data. Whereas ArrayContextElement can only accept
 `Array` type data.
@@ -112,3 +112,33 @@ type of data. ContextElement can only accept `Object` type data. Whereas ArrayCo
 ArrayContextElement requires the `data.key` attribute. The `data.key` attribute must contain the name of the property of the data, which has a unique value.
 This data.key will then be used as a marker when there is a new array accepted by the data property, to let ArrayContextElement
 to decide whether the active-node should be discarded or updated in the dom.
+
+### watch
+The following is an example of how we can use the `watch` attribute in ArrayContextElement or` context-array`.
+```html
+<context-array id="my-element" data.key="id">
+    <input type="text" value.watch="city">
+</context-array>
+<script>
+    const el = document.getElementById('my-element');
+    el.data = [{
+        city:'Dubai',
+        id : 1
+    },{
+        city : 'Abu Dhabi',
+        id : 2
+    },{
+        city : 'Tokyo',
+        id : 3
+    }];
+</script>
+```
+
+### action
+
+The `action` attribute in` context-array` is slightly different from the action attribute in `context-element`, the action object in
+context-array has 4 values:
+1. action.type: is the value given when we declare the action attribute in the template.
+2. action.event: is a dom event that triggers action.
+3. action.data: is a data item from an array.
+4. action.index: is an index of data items against an array.

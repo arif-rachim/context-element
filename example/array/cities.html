@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://unpkg.com/context-element"></script>
+</head>
+<body>
+    <context-array id="my-element" data.key="id">
+        <div>
+            <input type="text" value.watch="city">
+        </div>
+    </context-array>
+    <script>
+        const el = document.getElementById('my-element');
+        el.data = [{
+            city:'Dubai',
+            id : 1
+        },{
+            city : 'Abu Dhabi',
+            id : 2
+        },{
+            city : 'Oslo',
+            id : 3
+        }];
+    </script>
+</body>
+</html>
