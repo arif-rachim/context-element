@@ -66,17 +66,25 @@ To bind the attribute or innerHTML of the template, we can use the `watch` attri
 </context-element>
 ```
 
-## watch
+### watch
 The keyword `watch` is used by context-components to indicate that an attribute is an active-attribute. Besides `watch`
 active-attribute in context-components also marked with the `toggle` and` action` keywords.
 
 In the following example `<input value.watch =" time ">` means that the context-element will set the `value` attribute with a value
 from the `time` property of the data (`data.time`).
 
-## action
+### action
 The keyword action used by context-component to indicate an attribute is an event listener.
 To consume the event, we must use the `reducer` function. Reducer is a pure function that is
 receive the previous data and action, and return the next data. `(previousData, action) => nextData`.
+
+An action object in `context-element` consists of 2 attributes, type and event.
+
+1. Action.type is the value that we define in the active-attribute action.
+2. Action.event is the dom event that triggers the action.
+
+eg : ```<button click.action='DO_SOMETHING'>Proceed</button>```
+The action type would be `DO_SOMETHING` and the event would be MouseEvent.click.
 
 Following is an example of how the `action` attribute is used
 ```html
@@ -103,7 +111,7 @@ el.reducer = (data,action) => {
 }
 ```
 
-# _context-array_
+## _context-array_
 To render an array, we can use `context-array`. `context-array` is the tag-name of ArrayContextElement class.
 ArrayContextElement is a subclass of ContextElement. What distinguishes ArrayContextElement from ContextElement is
 type of data. ContextElement can only accept `Object` type data. Whereas ArrayContextElement can only accept
@@ -138,7 +146,42 @@ The following is an example of how we can use the `watch` attribute in ArrayCont
 
 The `action` attribute in` context-array` is slightly different from the action attribute in `context-element`, the action object in
 context-array has 4 values:
-1. action.type: is the value given when we declare the action attribute in the template.
-2. action.event: is a dom event that triggers action.
-3. action.data: is a data item from an array.
-4. action.index: is an index of data items against an array.
+1. Action.type: is the value given when we declare the action attribute in the template.
+2. Action.event: is a dom event that triggers action.
+3. Action.data: is a data item from an array.
+4. Action.index: is an index of data items against an array.
+
+Following is an example of how we can use actions in `context-array`
+
+```html
+<context-array id="my-element" data.key="id">
+    <div>
+        <input type="checkbox" input.action="SET_CHECKBOX">
+        <div watch="isChecked"></div>
+    </div>
+</context-array>
+
+<script>
+    const el = document.getElementById('my-element');
+    el.data = [
+        { dataId : 1, isChecked:false},
+        { dataId : 2, isChecked:false},
+    ];
+    el.reducer = (array,action) => {
+        const {type,event,data,index} = action;
+        switch (type) {
+            case 'SET_CHECKBOX' : {
+                const newData = {...data,isChecked:event.target.checked};
+                return [...array.slice(0,index),newData, ...array.slice(index+1,array.length)]
+            }  
+        }
+        return [...array];
+    }
+</script>
+```
+
+With the above code we can see that the `SET_CHECKBOX` action will set the value of isChecked with value
+the new one from checkbox.checked property.
+
+##### Examples
+head over our sample directory to see more context elements in action
