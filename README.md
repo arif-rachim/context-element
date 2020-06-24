@@ -1,14 +1,16 @@
 # _context-element_
 
 [![Build Status](https://travis-ci.org/marsa-emreef/context-element.svg?branch=master)](https://travis-ci.org/marsa-emreef/context-element)
+![gzip size](http://img.badgesize.io/https://unpkg.com/context-element/index.min.js?compression=gzip&label=MinJS%20gzip%20size)
 [![codecov](https://codecov.io/gh/marsa-emreef/context-element/branch/master/graph/badge.svg)](https://codecov.io/gh/marsa-emreef/context-element)
 ![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/marsa-emreef/context-element/master)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 ![GitHub](https://img.shields.io/github/license/marsa-emreef/context-element)
 
+
 **_`context-element`_** is an HTMLElement that makes it easy to render data or array in html page.
 
-**_`context-element`_** is a very small (3kb gzip). It can render an array of data efficiently and quickly. You can directly use **_`context-element`_** on the html page by supplying `arrays or object` to the attribute `data` into the **_`context-element`_** element. You can determine how the data will be displayed by creating a template inside the **_`context-element`_**.
+**_`context-element`_** is a very small (![gzip size](http://img.badgesize.io/https://unpkg.com/context-element/index.min.js?compression=gzip&label=MinJS%20gzip%20size)). It can render an array of data efficiently and quickly. You can directly use **_`context-element`_** on the html page by supplying `arrays or object` to the attribute `data` into the **_`context-element`_** element. You can determine how the data will be displayed by creating a template inside the **_`context-element`_**.
 
 ### installation
 

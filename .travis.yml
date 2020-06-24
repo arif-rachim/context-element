@@ -1,7 +1,7 @@
 language: node_js
 
 notifications:
-  email: false
+  email: a.arif.r@gmail.com
 
 jobs:
   include:
