@@ -2,6 +2,9 @@
 
 [![Build Status](https://travis-ci.org/marsa-emreef/context-element.svg?branch=master)](https://travis-ci.org/marsa-emreef/context-element)
 [![codecov](https://codecov.io/gh/marsa-emreef/context-element/branch/master/graph/badge.svg)](https://codecov.io/gh/marsa-emreef/context-element)
+![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/marsa-emreef/context-element/master)
+[![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
+![GitHub](https://img.shields.io/github/license/marsa-emreef/context-element)
 
 **_`context-element`_** is an HTMLElement that makes it easy to render data or array in html page.
 
@@ -14,7 +17,7 @@ Direct usage
 <script src="https://unpkg.com/context-element"></script>
 ```
 
-Javscript module
+npm module
 ```javascript
 npm install context-element
 ```

@@ -1,7 +1,7 @@
 {
   "name": "context-element",
   "version": "0.0.0-development",
-  "description": "HTMLElement makes it easy for you to create web pages that can display data dynamically",
+  "description": "An HTMLElement that makes it easy to render data or array in html page",
   "main": "index.js",
   "keywords": [
     "webcomponent",
