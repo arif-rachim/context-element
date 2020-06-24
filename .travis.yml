@@ -4,9 +4,18 @@ cache:
     - node_modules
 notifications:
   email: false
-before_script:
-  - npm run test
-script:
-  - npx semantic-release
-after_script:
-  - bash <(curl -s https://codecov.io/bash)
+
+jobs:
+  include:
+    # Define the release stage that runs semantic-release
+    - stage: release
+      node_js: lts/*
+      # Advanced: optionally overwrite your default `script` step to skip the tests
+      # script: skip
+      deploy:
+        provider: script
+        skip_cleanup: true
+        script:
+          - npx semantic-release
+          - npm run test
+          - bash <(curl -s https://codecov.io/bash)
