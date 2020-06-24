@@ -11,7 +11,6 @@
     "test": "jest --coverage",
     "build": "rollup --config rollup.config.js",
     "todo": "parcel ./example/todo/todo.html",
-    "semantic-release": "semantic-release pre && npm publish",
     "commit": "git-cz"
   },
   "author": "Arif Rachim",
@@ -40,5 +39,8 @@
   },
   "czConfig": {
     "path": "node_modules/cz-conventional-changelog"
+  },
+  "release" : {
+    "branches" : ["master"]
   }
 }
