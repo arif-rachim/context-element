@@ -1,6 +1,7 @@
 # _context-element_
 
 [![Build Status](https://travis-ci.org/marsa-emreef/context-element.svg?branch=master)](https://travis-ci.org/marsa-emreef/context-element)
+[![codecov](https://codecov.io/gh/marsa-emreef/context-element/branch/master/graph/badge.svg)](https://codecov.io/gh/marsa-emreef/context-element)
 
 **_`context-element`_** is an HTMLElement that makes it easy to render data or array in html page.
 
