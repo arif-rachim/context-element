@@ -10,7 +10,7 @@
 
 **_`context-element`_** is an HTMLElement that makes it easy to render data or array in html page.
 
-**_`context-element`_** is a very small (![gzip size](http://img.badgesize.io/https://unpkg.com/context-element/index.min.js?compression=gzip&label=MinJS%20gzip%20size)). It can render an array of data efficiently and quickly. You can directly use **_`context-element`_** on the html page by supplying `arrays or object` to the attribute `data` into the **_`context-element`_** element. You can determine how the data will be displayed by creating a template inside the **_`context-element`_**.
+**_`context-element`_** is a very small ![gzip size](http://img.badgesize.io/https://unpkg.com/context-element/index.min.js?compression=gzip&label=MinJS%20gzip%20size). It can render an array of data efficiently and quickly. You can directly use **_`context-element`_** on the html page by supplying `arrays or object` to the attribute `data` into the **_`context-element`_** element. You can determine how the data will be displayed by creating a template inside the **_`context-element`_**.
 
 ### installation
 
@@ -206,5 +206,6 @@ Following is an example of how we can use actions in `context-array`
 With the above code we can see that the `SET_CHECKBOX` action will set the value of isChecked with value
 the new one from checkbox.checked property.
 
-##### Examples
-head over our sample directory to see more context elements in action
+##### Examples & Github Page
+head over our [ContextElement page](https://marsa-emreef.github.io/context-element/)  to see more context elements in action
+
