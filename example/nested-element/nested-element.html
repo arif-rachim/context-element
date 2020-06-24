@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://unpkg.com/context-element"></script>
+</head>
+<body>
+    <context-element id="myelement">
+        <div watch="name"></div>
+        <context-element data.watch="address" reducer.watch="addressReducer">
+            <div watch="city"></div>
+            <input type="text" input.action="SET_CITY">
+        </context-element>
+    </context-element>
+    <script>
+        const el = document.getElementById('myelement');
+
+        el.data = {
+            name : 'Example of how to change the node',
+            address : {
+                city : 'You can change this value'
+            },
+            addressReducer : (address,action) => {
+                const {type,event} = action;
+                switch (type) {
+                    case 'SET_CITY' : {
+                        const city = event.target.value;
+                        return {...address,city}
+                    }
+                }
+                return {...address}
+            }
+        }
+    </script>
+</body>
+</html>
