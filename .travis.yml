@@ -16,5 +16,6 @@ jobs:
         provider: script
         skip_cleanup: true
         script:
-          - npm run test && codecov
+          - npm run test
+          - bash <(curl -s https://codecov.io/bash)
           - npx semantic-release
