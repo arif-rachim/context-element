@@ -3,6 +3,19 @@
 
 **_`context-element`_** is a very small (3kb gzip). It can render an array of data efficiently and quickly. You can directly use **_`context-element`_** on the html page by supplying `arrays or object` to the attribute `data` into the **_`context-element`_** element. You can determine how the data will be displayed by creating a template inside the **_`context-element`_**.
 
+### installation
+
+Direct usage
+```html
+<script src="https://unpkg.com/context-element"></script>
+```
+
+Javscript module
+```javascript
+npm install context-element
+```
+
+
 ## Motivation
 To build interactive html pages and display data dynamically, we can use a front-end `framework/library` that has an engine to detect data changes and render these pages in a browser efficiently.
 
@@ -34,6 +47,7 @@ The framework will organize how pages are displayed based on the template that w
     </body>
 </html>
 ```
+
 
 ## How it works
 context-element has a property called `data`. The `data` property in context-element is also known as the `context-data`.

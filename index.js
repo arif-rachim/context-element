@@ -128,10 +128,12 @@
                 if (attributes.length === 1) {
                     event = 'click';
                     state = STATE_GLOBAL;
-                } else if (attributes.length === 2) {
+                }
+                else if (attributes.length === 2) {
                     event = attributes[0];
                     state = STATE_GLOBAL;
-                } else if (attributes.length > 2) {
+                }
+                else if (attributes.length > 2) {
                     event = attributes[0];
                     state = attributes[1];
                 }
@@ -157,10 +159,12 @@
                 if (attributes.length === 1) {
                     attribute = 'content';
                     state = STATE_GLOBAL;
-                } else if (attributes.length === 2) {
+                }
+                else if (attributes.length === 2) {
                     attribute = attributes[0];
                     state = STATE_GLOBAL;
-                } else if (attributes.length > 2) {
+                }
+                else if (attributes.length > 2) {
                     attribute = attributes[0];
                     state = attributes[1];
                 }
@@ -190,7 +194,8 @@
                         attributeStateProperty.set(attribute, new Map());
                     }
                     attributeStateProperty.get(attribute).set(state, value);
-                } else {
+                }
+                else {
                     throw new Error(toggleMissingStateAndProperty());
                 }
             }
@@ -344,7 +349,8 @@
         try {
             const evaluate = new Function('data', `return data.${prop};`);
             return evaluate.call(null, data);
-        } catch (err) {
+        }
+        catch (err) {
             console.warn(data, err.message);
         }
         return null;
@@ -363,7 +369,8 @@
         try {
             const evaluate = new Function('data', 'value', `data.${prop} = value;`);
             return evaluate.call(null, data, value);
-        } catch (err) {
+        }
+        catch (err) {
             console.warn(err.message);
         }
     };
@@ -541,7 +548,7 @@
                 }
                 // @ts-ignore
                 const data = this.dataSource;
-                const dataGetter = () => ({data});
+                const dataGetter = () => ({ data });
                 this.renderer.render(dataGetter);
                 this.lastChild.remove();
             };
@@ -680,7 +687,7 @@
                         }
                         anchorNode = node;
                     }
-                    const dataGetter = () => ({data, key: dataKey, index: (dpLength - index)});
+                    const dataGetter = () => ({ data, key: dataKey, index: (dpLength - index) });
                     itemRenderer.render(dataGetter);
                 });
                 this.lastChild.remove();
