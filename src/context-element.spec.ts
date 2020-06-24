@@ -2,6 +2,7 @@ import {ContextElement} from './context-element';
 import './index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
+import {Action} from "./types";
 
 /**
  *
@@ -71,4 +72,41 @@ content.two.watch="picture"></div>
         expect((contextElement.firstChild as HTMLDivElement).innerHTML).toBe(users[3].name);
         done();
     });
+});
+
+test('It should perform update only against the node leaf',(done) => {
+    const contextElement = createContextElement(`<div watch="name"></div>
+        <context-element data.watch="address" reducer.watch="addressReducer" id="subElement">
+            <div watch="city" id="cityDiv"></div>
+            <input type="text" input.action="SET_CITY" id="input">
+        </context-element>`);
+    contextElement.data = {
+        name : 'Example of how to change the node',
+        address : {
+            city : 'You can change this value'
+        },
+        addressReducer : (address:any,action:Action<any>) => {
+            const type:string = action.type;
+            const event:any = action.event;
+            switch (type) {
+                case 'SET_CITY' : {
+                    const city = event.target.value;
+                    return {...address,city}
+                }
+            }
+            return {...address}
+        }
+    };
+    contextElement.onMounted(() => {
+        const subElement = document.getElementById('subElement') as ContextElement<any, any>;
+        subElement.onMounted(() => {
+            const input:HTMLInputElement = document.getElementById('input') as HTMLInputElement;
+            input.value = 'Jakarta';
+            input.dispatchEvent(new InputEvent('input',{bubbles:true,cancelable:true}));
+            const cityDiv = document.getElementById('cityDiv');
+            expect(cityDiv.innerHTML).toBe('Jakarta');
+            done();
+        });
+    });
+
 });

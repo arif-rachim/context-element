@@ -11,8 +11,8 @@
     "test": "jest --coverage",
     "build": "rollup --config rollup.config.js",
     "todo": "parcel ./example/todo/todo.html",
-    "semantic-release": "semantic-release",
-    "commit" : "git-cz"
+    "semantic-release": "semantic-release pre && npm publish",
+    "commit": "git-cz"
   },
   "author": "Arif Rachim",
   "license": "MIT",
@@ -38,7 +38,7 @@
     "type": "git",
     "url": "https://github.com/marsa-emreef/context-element.git"
   },
-  "czConfig" : {
-    "path" : "node_modules/cz-conventional-changelog"
+  "czConfig": {
+    "path": "node_modules/cz-conventional-changelog"
   }
 }
