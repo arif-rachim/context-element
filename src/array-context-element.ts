@@ -1,4 +1,4 @@
-import {DATA_KEY_ATTRIBUTE, hasNoValue, Renderer, ToString} from "./types";
+import {DATA_KEY_ATTRIBUTE, DataGetter, hasNoValue, Renderer, ToString} from "./types";
 import {ContextElement} from "./context-element";
 import {arrayContextElementMissingDataKey} from "./libs/error-message";
 import DataRenderer from "./libs/data-renderer";
@@ -26,7 +26,7 @@ import DataRenderer from "./libs/data-renderer";
  * </pre>
  *
  */
-export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
+export class ArrayContextElement<Item> extends ContextElement<Item[]> {
 
     private dataKeyPicker: ToString<Item>;
     private dataKeyField: string;
@@ -106,7 +106,7 @@ export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
         let anchorNode: Node = document.createElement('template');
         this.append(anchorNode);
         const dpLength = dataSource.length - 1;
-        [...dataSource].reverse().forEach((data, index) => {
+        [...dataSource].reverse().forEach((data:Item, index:number) => {
             const dataKey = this.dataKeyPicker(data);
             if (!renderers.has(dataKey)) {
                 const dataNode: ChildNode[] = template.map(node => node.cloneNode(true)) as ChildNode[];
@@ -121,7 +121,7 @@ export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
                 }
                 anchorNode = node;
             }
-            const dataGetter = () => ({data, key: dataKey, index: (dpLength - index)});
+            const dataGetter:DataGetter<Item> = () => ({data, key: dataKey, index: (dpLength - index)});
             itemRenderer.render(dataGetter);
         });
         this.lastChild.remove();

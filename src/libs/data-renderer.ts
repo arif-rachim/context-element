@@ -23,7 +23,7 @@ import AttributeEvaluator from "./attribute-evaluator";
  * When DataRenderer.render invoked by the ContextElement, DataRenderer iterate all ActiveAttributes and call
  * ActiveAttribte.render method.
  */
-export default class DataRenderer<DataSource, Item> {
+export default class DataRenderer<DataSource> {
 
     /**
      * Real node (copy of ContextElement.template) that is attached to the document.body
@@ -38,17 +38,17 @@ export default class DataRenderer<DataSource, Item> {
     /**
      * Callback that responsible to convert oldData into a newData based on the user action.
      */
-    private readonly reducer: Reducer<DataSource, Item>;
+    private readonly reducer: Reducer<DataSource>;
 
     /**
      * Callback to get the latest ContextElement.data
      */
-    private dataGetter: DataGetter<Item>;
+    private dataGetter: DataGetter<DataSource>;
 
     /**
      * Collection of AttributeEvaluator.
      */
-    private readonly attributeEvaluators: AttributeEvaluator<DataSource, Item>[];
+    private readonly attributeEvaluators: AttributeEvaluator<DataSource>[];
 
     /**
      * Constructor to setup the DataRenderer initialization.
@@ -57,7 +57,7 @@ export default class DataRenderer<DataSource, Item> {
      * @param updateData
      * @param reducer
      */
-    constructor(nodes: ChildNode[], updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource, Item>) {
+    constructor(nodes: ChildNode[], updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource>) {
         this.nodes = nodes;
         this.updateData = updateData;
         this.reducer = reducer;
@@ -72,9 +72,9 @@ export default class DataRenderer<DataSource, Item> {
      * Render with iterate all the AttributeEvaluators and call the AttributeEvaluator.render
      * @param getter
      */
-    public render = (getter: DataGetter<Item>) => {
+    public render = (getter: DataGetter<DataSource>) => {
         this.dataGetter = getter;
-        this.attributeEvaluators.forEach((attributeEvaluator: AttributeEvaluator<DataSource, Item>) => attributeEvaluator.render());
+        this.attributeEvaluators.forEach((attributeEvaluator: AttributeEvaluator<DataSource>) => attributeEvaluator.render());
     };
 
 }

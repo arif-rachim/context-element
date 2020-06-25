@@ -1,10 +1,29 @@
-export type Reducer<T, O> = (data: T, action: Action<O>) => T
-export type Action<O> = { type: string, data: O, key: string, event: Event, index: number };
+export interface Action{
+    type: string;
+    event: Event;
+}
+export interface ArrayAction<T> extends Action{
+    data:T;
+    index:number;
+    key:string;
+}
+
+export type Reducer<T> = (data: T, action: Action|ArrayAction<T>) => T
+
 export type Renderer = { render: (dataGetter: () => any) => void, nodes: ChildNode[] };
-export type DataSetter<O> = (oldData: O) => O;
-export type ToString<O> = (data: O) => string;
-export type DataGetter<O> = () => DataGetterValue<O>;
-export type DataGetterValue<O> = { key?: string, data: O, index?: number };
+export type DataSetter<T> = (oldData: T) => T;
+export type ToString<T> = (data: T) => string;
+export type DataGetter<O> = () => DataGetterValue<O> | ArrayDataGetterValue<O>;
+
+export interface DataGetterValue<T> {
+    data: T;
+}
+export interface ArrayDataGetterValue<T> extends DataGetterValue<T[]>{
+    key: string;
+    index: number;
+}
+
+
 export type UpdateDataCallback<O> = (value: DataSetter<O>) => void;
 
 export const composeChangeEventName = (attribute: any) => `${attribute}Changed`;

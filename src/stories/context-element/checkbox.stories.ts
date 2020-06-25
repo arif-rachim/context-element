@@ -19,7 +19,7 @@ export const checkbox = () => {
             isDone : boolean
         }
 
-        const el = document.getElementById('myElement') as ContextElement<Data,Data>;
+        const el = document.getElementById('myElement') as ContextElement<Data>;
         el.data = object('Default State',{
             isDone : false
         });

@@ -3,7 +3,6 @@ import './index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
 import {Action} from "./types";
-import {create} from "domain";
 
 /**
  *
@@ -15,7 +14,7 @@ const createContextElement = (innerHTML?: string) => {
     element.innerHTML = innerHTML;
     element.setAttribute('id', randomId);
     document.body.append(element);
-    return document.body.querySelector(`#${randomId}`) as ContextElement<any,any>;
+    return document.body.querySelector(`#${randomId}`) as ContextElement<any>;
 };
 
 const generateRandomUser = (length: number) => {
@@ -86,7 +85,7 @@ test('It should perform update only against the node leaf',(done) => {
         address : {
             city : 'You can change this value'
         },
-        addressReducer : (address:any,action:Action<any>) => {
+        addressReducer : (address:any,action:Action) => {
             const type:string = action.type;
             const event:any = action.event;
             switch (type) {
@@ -99,7 +98,7 @@ test('It should perform update only against the node leaf',(done) => {
         }
     };
     contextElement.onMounted(() => {
-        const subElement = document.getElementById('subElement') as ContextElement<any, any>;
+        const subElement = document.getElementById('subElement') as ContextElement<any>;
         subElement.onMounted(() => {
             const input:HTMLInputElement = document.getElementById('input') as HTMLInputElement;
             input.value = 'Jakarta';

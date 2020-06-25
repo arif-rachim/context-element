@@ -2,7 +2,7 @@ import {ArrayContextElement} from './array-context-element';
 import './index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
-import {DATA_KEY_ATTRIBUTE, STATE_PROPERTY} from "./types";
+import {ArrayAction, DATA_KEY_ATTRIBUTE, STATE_PROPERTY} from "./types";
 
 const createArrayContextElement = (innerHTML?: string) => {
     const randomId = uuid();
@@ -139,7 +139,7 @@ test('It should update the data when click event triggered',(done) => {
     arrayContextElement.setAttribute(DATA_KEY_ATTRIBUTE, 'userId');
     const users = generateRandomUser(3);
     arrayContextElement.data = users;
-    arrayContextElement.reducer = (context,action) => {
+    arrayContextElement.reducer = (context,action:ArrayAction<any>) => {
         const data = action.data;
         switch (action.type) {
             case 'SET_SIMPLE' : {
@@ -174,7 +174,7 @@ test('It should toggle when user change the data',(done)=>{
         <button click.action="SET_TWO">Toggle TWO</button>
         <button click.action="SET_NONE">Toggle Three</button>
     `);
-    arrayContextElement.reducer = (context,action) => {
+    arrayContextElement.reducer = (context,action:ArrayAction<any>) => {
         switch (action.type) {
             case 'SET_ONE' : {
                 action.data[STATE_PROPERTY] = 'one';
@@ -217,7 +217,7 @@ test('it should provide a default array if there is no object assigned to it',(d
     <div watch="nama" content.enabled.watch="enabled" content.disabled.watch="disabled" class="divToWatch"></div>
     <button click.action="TOGGLE_STATE" >Click</button>
 </div>`);
-    contextElement.reducer = (array,action) => {
+    contextElement.reducer = (array,action:ArrayAction<any>) => {
         const d = action.data;
         d.nama = 'Name';
         d.enabled = 'enabled';

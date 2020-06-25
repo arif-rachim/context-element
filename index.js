@@ -249,13 +249,20 @@
                 let dataState = dataGetterValue.data[STATE_PROPERTY];
                 if (stateAction.has(dataState) || stateAction.has(STATE_GLOBAL)) {
                     updateData((oldData) => {
-                        return reducer(oldData, {
-                            type: stateAction.get(dataState) || stateAction.get(STATE_GLOBAL),
-                            data: dataGetterValue.data,
-                            event,
-                            key: dataGetterValue.key,
-                            index: dataGetterValue.index
-                        });
+                        const type = stateAction.get(dataState) || stateAction.get(STATE_GLOBAL);
+                        let data = dataGetterValue.data;
+                        if ('key' in dataGetterValue) {
+                            const arrayDataGetterValue = dataGetterValue;
+                            data = arrayDataGetterValue.data;
+                            return reducer(oldData, {
+                                type,
+                                event,
+                                data,
+                                key: arrayDataGetterValue.key,
+                                index: arrayDataGetterValue.index
+                            });
+                        }
+                        return reducer(oldData, { type, event });
                     });
                 }
             });
@@ -546,7 +553,6 @@
                     }
                     anchorNode = node;
                 }
-                // @ts-ignore
                 const data = this.dataSource;
                 const dataGetter = () => ({ data });
                 this.renderer.render(dataGetter);
@@ -569,6 +575,8 @@
             this.template = null;
             this.renderer = null;
             this.reducer = null;
+            // this is a data source
+            this.dataSource = {};
         }
         /**
          * Get the value of data in this ContextElement
@@ -718,6 +726,7 @@
             };
             this.renderers = new Map();
             this.dataKeyPicker = defaultDataKeyPicker;
+            this.dataSource = [];
         }
         /**
          * Observed attributes in context element

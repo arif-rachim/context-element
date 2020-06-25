@@ -13,7 +13,7 @@ export const timer = () => {
         interface Data{
             time : string
         }
-        const el = document.getElementById('myElement') as ContextElement<Data,Data>;
+        const el = document.getElementById('myElement') as ContextElement<Data>;
         el.data = object('data',{
             time : new Date().toLocaleTimeString()
         });

@@ -1,7 +1,7 @@
-
 import {object, withKnobs} from "@storybook/addon-knobs";
 import {useJavascript} from "../useJavascript";
 import {ArrayContextElement} from "../../array-context-element";
+import {ArrayAction} from "../../types";
 
 export default { title: 'Context Array',decorators:[withKnobs] };
 
@@ -27,7 +27,7 @@ export const input = () => {
             name : 'Typescript'
         }]);
 
-        el.reducer = (array,action) => {
+        el.reducer = (array,action:ArrayAction<any>) => {
             let {type,event,index,data} = action;
             switch (type) {
                 case 'SET_FAVORITE' : {

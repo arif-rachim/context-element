@@ -1,9 +1,7 @@
 import {ContextElement} from "../context-element";
-import {object, withKnobs} from "@storybook/addon-knobs";
+import {withKnobs} from "@storybook/addon-knobs";
 import {useJavascript} from "./useJavascript";
-import {Reducer} from "../types";
 import uuid from "../libs/uuid";
-import {is} from "@babel/types";
 
 export default { title: 'Todo App',decorators:[withKnobs] };
 
@@ -100,7 +98,7 @@ const mainReducer = (data:any,action:any) => {
 };
 
 const javascript = () => {
-    const app = document.getElementById('app') as ContextElement<any, any>;
+    const app = document.getElementById('app') as ContextElement<any>;
     let DEFAULT_CONTEXT = {
         todo : {
             id: uuid(),

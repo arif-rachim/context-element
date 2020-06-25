@@ -1,4 +1,5 @@
 import {
+    ArrayDataGetterValue,
     composeChangeEventName,
     contains,
     DATA_ACTION_ATTRIBUTE,
@@ -38,7 +39,7 @@ import {toggleMissingStateAndProperty} from "./error-message";
  *
  * The last step of the initialization of AttributeEvaluator, is to bind the node against eventStateAction.
  */
-export default class AttributeEvaluator<DataSource, Item> {
+export default class AttributeEvaluator<DataSource> {
 
     /**
      * active-node is the actual HTMLElement attached to the document.body
@@ -58,7 +59,7 @@ export default class AttributeEvaluator<DataSource, Item> {
     /**
      * DataGetter is a callback function to get the current actual data.
      */
-    private readonly dataGetter: DataGetter<Item>;
+    private readonly dataGetter: DataGetter<DataSource>;
 
     /**
      * DataUpdateCallback is a callback to inform DataRenderer that a new copy of data is available.
@@ -68,7 +69,7 @@ export default class AttributeEvaluator<DataSource, Item> {
     /**
      * callback function that is called when an action is triggered by dom event.
      */
-    private readonly reducer: Reducer<DataSource, Item>;
+    private readonly reducer: Reducer<DataSource>;
 
     // mapping for watch
     private readonly stateAttributeProperty: Map<string, Map<string, string>> = null;
@@ -89,7 +90,7 @@ export default class AttributeEvaluator<DataSource, Item> {
      * @param updateData : callback function to inform DataRenderer that a new data is created because of user action.
      * @param reducer : function to map data into a new one because of user action.
      */
-    constructor(activeNode: ChildNode, dataGetter: DataGetter<Item>, updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource, Item>) {
+    constructor(activeNode: ChildNode, dataGetter: DataGetter<DataSource>, updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource>) {
         this.activeNode = activeNode;
         this.dataGetter = dataGetter;
         this.updateData = updateData;
@@ -240,7 +241,7 @@ const populateActiveAttributeValue = (element: HTMLElement) => {
  * @param updateData
  * @param reducer
  */
-const initEventListener = <DataSource, Item>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Item>, updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource, Item>) => {
+const initEventListener = <DataSource, Item>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Item>, updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource>) => {
     eventStateAction.forEach((stateAction: Map<string, string>, event: string) => {
 
         event = event.startsWith('on') ? event.substring('on'.length, event.length) : event;
@@ -250,17 +251,24 @@ const initEventListener = <DataSource, Item>(element: HTMLElement, eventStateAct
                 event.stopImmediatePropagation();
                 event.stopPropagation();
             }
-            const dataGetterValue: DataGetterValue<any> = dataGetter();
+            const dataGetterValue: DataGetterValue<any>|ArrayDataGetterValue<any> = dataGetter();
             let dataState = dataGetterValue.data[STATE_PROPERTY];
             if (stateAction.has(dataState) || stateAction.has(STATE_GLOBAL)) {
                 updateData((oldData) => {
-                    return reducer(oldData, {
-                        type: stateAction.get(dataState) || stateAction.get(STATE_GLOBAL),
-                        data: dataGetterValue.data,
-                        event,
-                        key: dataGetterValue.key,
-                        index: dataGetterValue.index
-                    });
+                    const type = stateAction.get(dataState) || stateAction.get(STATE_GLOBAL);
+                    let data = dataGetterValue.data;
+                    if('key' in dataGetterValue){
+                        const arrayDataGetterValue = dataGetterValue as ArrayDataGetterValue<any>;
+                        data = arrayDataGetterValue.data;
+                        return reducer(oldData, {
+                            type,
+                            event,
+                            data,
+                            key: arrayDataGetterValue.key,
+                            index: arrayDataGetterValue.index
+                        });
+                    }
+                    return reducer(oldData, {type,event});
                 });
             }
         })

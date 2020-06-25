@@ -1,5 +1,5 @@
 import {ContextElement} from "../../context-element";
-import {object, withKnobs} from "@storybook/addon-knobs";
+import {withKnobs} from "@storybook/addon-knobs";
 import {useJavascript} from "../useJavascript";
 
 export default { title: 'Context Element',decorators:[withKnobs] };
@@ -14,7 +14,7 @@ export const input = (args:any) => {
         interface Data{
             name : string
         }
-        const el = document.getElementById('myElement') as ContextElement<Data,Data>;
+        const el = document.getElementById('myElement') as ContextElement<Data>;
         el.data = {
             name : 'This is example of binding'
         }

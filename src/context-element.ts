@@ -1,4 +1,4 @@
-import {composeChangeEventName, DataSetter, hasNoValue, hasValue, HIDE_CLASS, Reducer} from "./types";
+import {composeChangeEventName, DataGetter, DataSetter, hasNoValue, hasValue, HIDE_CLASS, Reducer} from "./types";
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import DataRenderer from "./libs/data-renderer";
 
@@ -25,10 +25,11 @@ import DataRenderer from "./libs/data-renderer";
  * There are 3 kinds of active-attribute,  (watch / toggle / action). each attribute works with a different mechanism when ContextElement renders the data.
  *
  */
-export class ContextElement<Context, Item> extends HTMLElement {
-    public reducer: Reducer<Context, Item>;
+export class ContextElement<Context> extends HTMLElement {
+    public reducer: Reducer<Context>;
+
     protected template: ChildNode[];
-    protected renderer: DataRenderer<Context, Item>;
+    protected renderer: DataRenderer<Context>;
     protected dataSource: Context;
     protected onMountedCallback: () => void;
 
@@ -157,9 +158,9 @@ export class ContextElement<Context, Item> extends HTMLElement {
             }
             anchorNode = node;
         }
-        // @ts-ignore
-        const data = this.dataSource as Item;
-        const dataGetter = () => ({data});
+
+        const data = this.dataSource;
+        const dataGetter:DataGetter<Context> = () => ({data});
         this.renderer.render(dataGetter);
         this.lastChild.remove();
     };
