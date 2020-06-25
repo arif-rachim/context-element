@@ -39,7 +39,7 @@ import {toggleMissingStateAndProperty} from "./error-message";
  *
  * The last step of the initialization of AttributeEvaluator, is to bind the node against eventStateAction.
  */
-export default class AttributeEvaluator<DataSource> {
+export default class AttributeEvaluator<Context> {
 
     /**
      * active-node is the actual HTMLElement attached to the document.body
@@ -59,17 +59,17 @@ export default class AttributeEvaluator<DataSource> {
     /**
      * DataGetter is a callback function to get the current actual data.
      */
-    private readonly dataGetter: DataGetter<DataSource>;
+    private readonly dataGetter: DataGetter<Context>;
 
     /**
      * DataUpdateCallback is a callback to inform DataRenderer that a new copy of data is available.
      */
-    private readonly updateData: UpdateDataCallback<DataSource>;
+    private readonly updateData: UpdateDataCallback<Context>;
 
     /**
      * callback function that is called when an action is triggered by dom event.
      */
-    private readonly reducer: Reducer<DataSource>;
+    private readonly reducer: Reducer<Context>;
 
     // mapping for watch
     private readonly stateAttributeProperty: Map<string, Map<string, string>> = null;
@@ -90,7 +90,7 @@ export default class AttributeEvaluator<DataSource> {
      * @param updateData : callback function to inform DataRenderer that a new data is created because of user action.
      * @param reducer : function to map data into a new one because of user action.
      */
-    constructor(activeNode: ChildNode, dataGetter: DataGetter<DataSource>, updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource>) {
+    constructor(activeNode: ChildNode, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducer: Reducer<Context>) {
         this.activeNode = activeNode;
         this.dataGetter = dataGetter;
         this.updateData = updateData;
@@ -241,7 +241,7 @@ const populateActiveAttributeValue = (element: HTMLElement) => {
  * @param updateData
  * @param reducer
  */
-const initEventListener = <DataSource, Item>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Item>, updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource>) => {
+const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducer: Reducer<Context>) => {
     eventStateAction.forEach((stateAction: Map<string, string>, event: string) => {
 
         event = event.startsWith('on') ? event.substring('on'.length, event.length) : event;

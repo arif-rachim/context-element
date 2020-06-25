@@ -492,7 +492,7 @@
              * @param context
              */
             this.setData = (context) => {
-                this.dataSource = context(this.dataSource);
+                this.dataSource = context(this.contextData);
                 this.render();
             };
             /**
@@ -520,7 +520,7 @@
                 this.setData(dataSetter);
                 const dataChangedEvent = composeChangeEventName('data');
                 if (dataChangedEvent in this) {
-                    this[dataChangedEvent].call(this, this.dataSource);
+                    this[dataChangedEvent].call(this, this.contextData);
                 }
             };
             /**
@@ -537,7 +537,7 @@
              *
              */
             this.render = () => {
-                if (hasNoValue(this.dataSource) || hasNoValue(this.template)) {
+                if (hasNoValue(this.contextData) || hasNoValue(this.template)) {
                     return;
                 }
                 if (hasNoValue(this.renderer)) {
@@ -553,7 +553,7 @@
                     }
                     anchorNode = node;
                 }
-                const data = this.dataSource;
+                const data = this.contextData;
                 const dataGetter = () => ({ data });
                 this.renderer.render(dataGetter);
                 this.lastChild.remove();
@@ -582,7 +582,7 @@
          * Get the value of data in this ContextElement
          */
         get data() {
-            return this.dataSource;
+            return this.contextData;
         }
         /**
          * Set the value of ContextElement data

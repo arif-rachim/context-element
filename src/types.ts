@@ -13,7 +13,7 @@ export type Reducer<T> = (data: T, action: Action|ArrayAction<T>) => T
 export type Renderer = { render: (dataGetter: () => any) => void, nodes: ChildNode[] };
 export type DataSetter<T> = (oldData: T) => T;
 export type ToString<T> = (data: T) => string;
-export type DataGetter<O> = () => DataGetterValue<O> | ArrayDataGetterValue<O>;
+export type DataGetter<T> = () => DataGetterValue<T> | ArrayDataGetterValue<T>;
 
 export interface DataGetterValue<T> {
     data: T;

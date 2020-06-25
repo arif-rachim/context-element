@@ -26,9 +26,9 @@ import DataRenderer from "./libs/data-renderer";
  * </pre>
  *
  */
-export class ArrayContextElement<Item> extends ContextElement<Item[]> {
+export class ArrayContextElement<Context> extends ContextElement<Context[]> {
 
-    private dataKeyPicker: ToString<Item>;
+    private dataKeyPicker: ToString<Context>;
     private dataKeyField: string;
     private readonly renderers: Map<string, Renderer>;
 
@@ -37,7 +37,7 @@ export class ArrayContextElement<Item> extends ContextElement<Item[]> {
      */
     constructor() {
         super();
-        const defaultDataKeyPicker = (data: Item) => {
+        const defaultDataKeyPicker = (data: Context) => {
             if (hasNoValue(this.dataKeyField)) {
                 throw new Error(arrayContextElementMissingDataKey());
             }
@@ -45,7 +45,7 @@ export class ArrayContextElement<Item> extends ContextElement<Item[]> {
         };
         this.renderers = new Map<string, Renderer>();
         this.dataKeyPicker = defaultDataKeyPicker;
-        this.dataSource = [];
+        this.contextData = [];
     }
 
     /**
@@ -60,7 +60,7 @@ export class ArrayContextElement<Item> extends ContextElement<Item[]> {
      *
      * @param dataKeyPicker
      */
-    public setDataKeyPicker = (dataKeyPicker: ToString<Item>) => {
+    public setDataKeyPicker = (dataKeyPicker: ToString<Context>) => {
         this.dataKeyPicker = dataKeyPicker;
     };
 
@@ -96,17 +96,17 @@ export class ArrayContextElement<Item> extends ContextElement<Item[]> {
      *
      */
     protected render = () => {
-        const dataSource: Item[] = this.dataSource;
+        const contextData: Context[] = this.contextData;
         const template: ChildNode[] = this.template;
         const renderers: Map<string, Renderer> = this.renderers;
-        if (hasNoValue(dataSource) || hasNoValue(template)) {
+        if (hasNoValue(contextData) || hasNoValue(template)) {
             return;
         }
         this.removeExpiredData();
         let anchorNode: Node = document.createElement('template');
         this.append(anchorNode);
-        const dpLength = dataSource.length - 1;
-        [...dataSource].reverse().forEach((data:Item, index:number) => {
+        const dpLength = contextData.length - 1;
+        [...contextData].reverse().forEach((data:Context, index:number) => {
             const dataKey = this.dataKeyPicker(data);
             if (!renderers.has(dataKey)) {
                 const dataNode: ChildNode[] = template.map(node => node.cloneNode(true)) as ChildNode[];
@@ -121,7 +121,7 @@ export class ArrayContextElement<Item> extends ContextElement<Item[]> {
                 }
                 anchorNode = node;
             }
-            const dataGetter:DataGetter<Item> = () => ({data, key: dataKey, index: (dpLength - index)});
+            const dataGetter:DataGetter<Context> = () => ({data, key: dataKey, index: (dpLength - index)});
             itemRenderer.render(dataGetter);
         });
         this.lastChild.remove();
@@ -135,8 +135,8 @@ export class ArrayContextElement<Item> extends ContextElement<Item[]> {
      */
     private removeExpiredData = () => {
         const renderers: Map<string, Renderer> = this.renderers;
-        const dataSource: Item[] = this.dataSource;
-        const dataSourceKeys = dataSource.map(data => this.dataKeyPicker(data));
+        const contextData: Context[] = this.contextData;
+        const dataSourceKeys = contextData.map(data => this.dataKeyPicker(data));
         const prevKeys = Array.from(renderers.keys());
         const discardedKeys = prevKeys.filter(key => dataSourceKeys.indexOf(key) < 0);
         discardedKeys.forEach(discardedKey => {

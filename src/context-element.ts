@@ -30,7 +30,7 @@ export class ContextElement<Context> extends HTMLElement {
 
     protected template: ChildNode[];
     protected renderer: DataRenderer<Context>;
-    protected dataSource: Context;
+    protected contextData: Context;
     protected onMountedCallback: () => void;
 
     /**
@@ -41,15 +41,14 @@ export class ContextElement<Context> extends HTMLElement {
         this.template = null;
         this.renderer = null;
         this.reducer = null;
-        // this is a data source
-        this.dataSource = {} as Context;
+        this.contextData = {} as Context;
     }
 
     /**
      * Get the value of data in this ContextElement
      */
     get data(): Context {
-        return this.dataSource;
+        return this.contextData;
     }
 
     /**
@@ -71,7 +70,7 @@ export class ContextElement<Context> extends HTMLElement {
      * @param context
      */
     public setData = (context: DataSetter<Context>) => {
-        this.dataSource = context(this.dataSource);
+        this.contextData = context(this.contextData);
         this.render();
     };
 
@@ -124,7 +123,7 @@ export class ContextElement<Context> extends HTMLElement {
         this.setData(dataSetter);
         const dataChangedEvent: string = composeChangeEventName('data');
         if (dataChangedEvent in this) {
-            (this as any)[dataChangedEvent].call(this, this.dataSource);
+            (this as any)[dataChangedEvent].call(this, this.contextData);
         }
     };
 
@@ -142,7 +141,7 @@ export class ContextElement<Context> extends HTMLElement {
      *
      */
     protected render = () => {
-        if (hasNoValue(this.dataSource) || hasNoValue(this.template)) {
+        if (hasNoValue(this.contextData) || hasNoValue(this.template)) {
             return;
         }
         if (hasNoValue(this.renderer)) {
@@ -159,7 +158,7 @@ export class ContextElement<Context> extends HTMLElement {
             anchorNode = node;
         }
 
-        const data = this.dataSource;
+        const data = this.contextData;
         const dataGetter:DataGetter<Context> = () => ({data});
         this.renderer.render(dataGetter);
         this.lastChild.remove();
