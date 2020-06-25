@@ -40,6 +40,8 @@ export class ContextElement<Context, Item> extends HTMLElement {
         this.template = null;
         this.renderer = null;
         this.reducer = null;
+        // this is a data source
+        this.dataSource = {} as Context;
     }
 
     /**

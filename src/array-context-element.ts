@@ -45,6 +45,7 @@ export class ArrayContextElement<Item> extends ContextElement<Item[], Item> {
         };
         this.renderers = new Map<string, Renderer>();
         this.dataKeyPicker = defaultDataKeyPicker;
+        this.dataSource = [];
     }
 
     /**

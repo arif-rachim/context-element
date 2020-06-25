@@ -150,7 +150,6 @@ test('It should update the data when click event triggered',(done) => {
             case 'SET_COMPLETE' : {
                 data[STATE_PROPERTY] = 'complete';
                 return [...context];
-
             }
         }
         return context;
@@ -211,4 +210,41 @@ test('It should toggle when user change the data',(done)=>{
         done();
     });
 
-})
+});
+
+test('it should provide a default array if there is no object assigned to it',(done) => {
+    const contextElement = createArrayContextElement(`<div>
+    <div watch="nama" content.enabled.watch="enabled" content.disabled.watch="disabled" class="divToWatch"></div>
+    <button click.action="TOGGLE_STATE" >Click</button>
+</div>`);
+    contextElement.reducer = (array,action) => {
+        const d = action.data;
+        d.nama = 'Name';
+        d.enabled = 'enabled';
+        d.disabled = 'disabled';
+        d._state = d._state === 'enabled' ? 'disabled' : 'enabled';
+        return [...array.slice(0,action.index),{...d},...array.slice(action.index+1,array.length)];
+    };
+    contextElement.setAttribute('data.key','id');
+    contextElement.data = [{id:'1'},{id:'2'}];
+    contextElement.onMounted(() => {
+        const myButtons = Array.from(contextElement.getElementsByTagName('button'));
+        const divsToWatch = Array.from(contextElement.querySelectorAll('.divToWatch'));
+        expect(divsToWatch.length).toBe(contextElement.data.length);
+        // first click
+        myButtons.forEach(b => b.click());
+
+        divsToWatch.forEach((div) => {
+            expect(div.innerHTML).toBe('enabled');
+        });
+
+
+        // second click
+        myButtons.forEach(b => b.click());
+        divsToWatch.forEach((div) => {
+            expect(div.innerHTML).toBe('disabled');
+        });
+        expect(divsToWatch.length).toBe(contextElement.data.length);
+        done();
+    });
+});

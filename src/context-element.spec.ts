@@ -3,6 +3,7 @@ import './index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
 import {Action} from "./types";
+import {create} from "domain";
 
 /**
  *
@@ -109,4 +110,28 @@ test('It should perform update only against the node leaf',(done) => {
         });
     });
 
+});
+
+test('it should provide a default object if there is no object assigned to it',(done) => {
+    const contextElement = createContextElement(`<div>
+    <div watch="nama" content.enabled.watch="nama_panjang" content.disabled.watch="nama_pendek" id="divToWatch"></div>
+    <button click.action="TOGGLE_STATE" id="myButton">Click</button>
+</div>`);
+    contextElement.reducer = (data,action) => {
+        data.nama = 'Okay';
+        data.nama_panjang = 'Okay Deh';
+        data.nama_pendek = 'Deh';
+        data._state = data?._state === 'enabled' ? 'disabled' : 'enabled';
+        return {...data}
+    };
+
+    contextElement.onMounted(() => {
+        const myButton = document.getElementById('myButton');
+        const divToWatch = document.getElementById('divToWatch');
+        myButton.click();
+        expect(divToWatch.innerHTML).toBe('Okay Deh');
+        myButton.click();
+        expect(divToWatch.innerHTML).toBe('Deh');
+        done();
+    });
 });
