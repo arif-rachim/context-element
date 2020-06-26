@@ -20,7 +20,7 @@ Direct usage
 ```
 
 npm module
-```javascript
+```
 npm install context-element
 ```
 
@@ -91,7 +91,7 @@ To bind the attribute or innerHTML of the template, we can use the `watch` attri
 
 ### watch
 The keyword `watch` is used by context-components to indicate that an attribute is an active-attribute. Besides `watch`
-active-attribute in context-components also marked with the `toggle` and` action` keywords.
+active-attribute in context-components also marked with the `toggle`,`asset` and` action` keywords.
 
 In the following example `<input value.watch =" time ">` means that the context-element will set the `value` attribute with a value
 from the `time` property of the data (`data.time`).
@@ -204,7 +204,78 @@ Following is an example of how we can use actions in `context-array`
 ```
 
 With the above code we can see that the `SET_CHECKBOX` action will set the value of isChecked with value
-the new one from checkbox.checked property.
+the new one from `checkbox.checked` property.
+
+
+### toggle
+Toogle is an active-attribute that is used to toggle the value of the attribute. To use the toggle attribute
+we must use the `state` of the context. Consider the following example how toggle used :
+
+```html
+<context-element>
+    <input type="text" class="text-style" class.highlight.toggle="text-highlight" mouseenter.action="SET_HIGHLIGHT" mouseleave.action="HIDE_HIGHLIGHT">
+</context-element>
+<script>
+    const el = document.getElementsByTagName('context-element');
+    el.reducer = (data,action) => {
+        switch(action.type){
+            case 'SET_HIGHTLIGHT' : {
+                const newData = {...data};
+                // here we set the _state to highlight.
+                newData._state = 'highlight';
+                return newData;
+            }
+            case 'HIDE_HIGHTLIGHT' : {
+                const newData = {...data};
+                delete newData._state;
+                return newData;
+            }
+        }       
+        return {...data}
+    }
+</script>
+```
+The code above means, if the value of **`data._state`** is` highlight` then the context-element will render the template above to
+
+```html
+<context-element>
+    <input type="text" class="text-style text-highlight" >
+</context-element>
+```
+ 
+### asset
+Assets are active attributes that will bound values from attributes not from data, but from context-element `asset` property.
+Following is an example of using Assets.
+
+```html
+<context-element>  
+    <input type="text" placeholder.asset="placeHolderText">
+</context-element>
+<script>
+    const el = document.getElementsByTagName('context-element');
+    el.assets = {
+        placeHolderText : 'Please type your input here ?'
+    }
+</script>
+```
+Inside the script tag in the sample code above, we assign the value of `assets` to the context-element. `context-element` will bind the value of the placeholder to the value
+`Please type your input here?`.
+
+
+In contrast to `data`, if we assign the value of an `asset`, the context-element will not rerendered its content.
+
+Apart from that, if the context-element cannot find the key of the asset that we are looking for, then the context-element will look to the parent assets.
+
+#### active-attributes semantic
+semantic | meaning
+--- | --- | 
+```<div watch="name">``` | Bind the data name property into the div content. This is the same as ```<div content.watch="name">``` 
+```<div content.simple.watch="firstName" content.detail.watch="fullName"></div>``` | If `data._state` value is `simple`: then bind content div with the property `data.firstName`, if `data._state` value is `detail` : then bind content div with the property` data.fullName`.
+```<input value.watch="name">``` | Bind the `data.name` property into the input value.
+```<input value.people.watch="name" value.address.watch="city">``` | If `data._state` value is `people`: then bind the element attribute `input.value` with` data.name`. If `data._state` value is `address`: then bind the element attribute `input.value` with` data.city`
+```<div class="default" class.disabled.toggle="disabled">Cloud Strife</div>``` | If `data._state` has no value, the value of the class attribute is` <div class = "default"> Cloud Strife </div> `, If` data._state` has a value of `disabled` then the value of the class is` < div class = "default disabled"> Cloud Strife </div> `
+
+
 
 ##### Examples & Github Page
 head over our [ContextElement page](https://marsa-emreef.github.io/context-element/)  to see more context elements in action
