@@ -8,6 +8,7 @@
     const DATA_WATCH_ATTRIBUTE = 'watch';
     const DATA_ACTION_ATTRIBUTE = 'action';
     const DATA_TOGGLE_ATTRIBUTE = 'toggle';
+    const DATA_ASSET_ATTRIBUTE = 'asset';
     const STATE_PROPERTY = '_state';
     const STATE_GLOBAL = '*';
     const DATA_KEY_ATTRIBUTE = 'data.key';
@@ -76,12 +77,14 @@
          * The last process would be initialization of event listener.
          *
          * @param activeNode : node that contains active-attribute.
+         * @param assetGetter : callback function to get the asset from context-data
          * @param dataGetter : callback function to return current data.
          * @param updateData : callback function to inform DataRenderer that a new data is created because of user action.
          * @param reducer : function to map data into a new one because of user action.
+         * @param activeAttributes : attributes that is used to lookup the nodes
          */
-        constructor(activeNode, dataGetter, updateData, reducer) {
-            // mapping for watch
+        constructor(activeNode, assetGetter, dataGetter, updateData, reducer, activeAttributes) {
+            // mapping for watch & assets
             this.stateAttributeProperty = null;
             // mapping for toggle
             this.attributeStateProperty = null;
@@ -99,18 +102,20 @@
                 const data = dataGetterValue.data;
                 const dataState = data[STATE_PROPERTY];
                 const defaultAttributeValue = this.defaultAttributeValue;
-                updateWatchAttribute(element, stateAttributeProperty, dataGetterValue, dataState);
+                const assetGetter = this.assetGetter;
+                updateWatchAttribute(element, stateAttributeProperty, data, dataState, assetGetter);
                 updateToggleAttribute(element, attributeStateProperty, dataState, defaultAttributeValue);
             };
             this.activeNode = activeNode;
             this.dataGetter = dataGetter;
+            this.assetGetter = assetGetter;
             this.updateData = updateData;
             this.reducer = reducer;
-            this.activeAttributeValue = populateActiveAttributeValue(activeNode);
+            this.activeAttributeValue = populateActiveAttributeValue(activeNode, activeAttributes);
             this.defaultAttributeValue = populateDefaultAttributeValue(activeNode);
             this.eventStateAction = mapEventStateAction(this.activeAttributeValue);
-            this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue);
-            this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue);
+            this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue, [DATA_WATCH_ATTRIBUTE, DATA_ASSET_ATTRIBUTE]);
+            this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue, DATA_TOGGLE_ATTRIBUTE);
             initEventListener(activeNode, this.eventStateAction, dataGetter, updateData, reducer);
         }
     }
@@ -148,30 +153,39 @@
     /**
      * mapStateAttributeProperty is a function to convert `watch` active-attribute to property group by first state, then attribute.
      * @param attributeValue
+     * @param attributePrefixes
      */
-    const mapStateAttributeProperty = (attributeValue) => {
+    const mapStateAttributeProperty = (attributeValue, attributePrefixes) => {
         const stateAttributeProperty = new Map();
         attributeValue.forEach((value, attributeName) => {
-            if (attributeName.endsWith(DATA_WATCH_ATTRIBUTE)) {
+            if (attributePrefixes.filter(attributePrefix => attributeName.endsWith(attributePrefix)).length > 0) {
                 const attributes = attributeName.split('.');
                 let attribute = '';
                 let state = '';
+                let type = '';
                 if (attributes.length === 1) {
                     attribute = 'content';
                     state = STATE_GLOBAL;
+                    type = attributes[0];
                 }
                 else if (attributes.length === 2) {
                     attribute = attributes[0];
                     state = STATE_GLOBAL;
+                    type = attributes[1];
                 }
                 else if (attributes.length > 2) {
                     attribute = attributes[0];
                     state = attributes[1];
+                    type = attributes[2];
                 }
                 if (!stateAttributeProperty.has(state)) {
                     stateAttributeProperty.set(state, new Map());
                 }
-                stateAttributeProperty.get(state).set(attribute, value);
+                const attributeProperty = stateAttributeProperty.get(state);
+                if (!attributeProperty.has(attribute)) {
+                    attributeProperty.set(attribute, new Map());
+                }
+                attributeProperty.get(attribute).set(type, value);
             }
         });
         return stateAttributeProperty;
@@ -179,11 +193,12 @@
     /**
      * mapAttributeStateProperty is a function to convert `toggle` active-attribute to property group by first attribute, then state.
      * @param attributeValue
+     * @param attributePrefix
      */
-    const mapAttributeStateProperty = (attributeValue) => {
+    const mapAttributeStateProperty = (attributeValue, attributePrefix) => {
         const attributeStateProperty = new Map();
         attributeValue.forEach((value, attributeName) => {
-            if (attributeName.endsWith(DATA_TOGGLE_ATTRIBUTE)) {
+            if (attributeName.endsWith(attributePrefix)) {
                 const attributes = attributeName.split('.');
                 let attribute = '';
                 let state = '';
@@ -205,10 +220,11 @@
     /**
      * populateActiveAttributeValue will extract the active-attributes from the element.
      * @param element
+     * @param activeAttributes
      */
-    const populateActiveAttributeValue = (element) => {
+    const populateActiveAttributeValue = (element, activeAttributes) => {
         const attributeValue = new Map();
-        element.getAttributeNames().filter(name => contains(name, [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE])).forEach(attributeName => {
+        element.getAttributeNames().filter(name => contains(name, activeAttributes)).forEach(attributeName => {
             attributeValue.set(attributeName, element.getAttribute(attributeName));
             element.removeAttribute(attributeName);
         });
@@ -254,7 +270,7 @@
                         if ('key' in dataGetterValue) {
                             const arrayDataGetterValue = dataGetterValue;
                             data = arrayDataGetterValue.data;
-                            return reducer(oldData, {
+                            return reducer()(oldData, {
                                 type,
                                 event,
                                 data,
@@ -262,12 +278,35 @@
                                 index: arrayDataGetterValue.index
                             });
                         }
-                        return reducer(oldData, { type, event });
+                        return reducer()(oldData, { type, event });
                     });
                 }
             });
         });
     };
+    /**
+     * Function to set property of an element, it will check if the attribute is a valid attribute, if its a valid attribute
+     * then it will set the attribute value, and if the attribute is element property, then the element will be assigned for the attribute.
+     *
+     * @param attribute
+     * @param element
+     * @param val
+     * @param data
+     * @param property
+     */
+    function setPropertyValue(attribute, element, val, data, property) {
+        if (isValidAttribute(attribute)) {
+            element.setAttribute(attribute, val);
+        }
+        if (attribute in element) {
+            element[attribute] = val;
+            const eventName = composeChangeEventName(attribute);
+            element[eventName] = (val) => injectValue(data, property, val);
+        }
+        if (attribute === 'content') {
+            element.innerHTML = val;
+        }
+    }
     /**
      * UpdateWatchAttribute is a method that will perform update against `watch` active-attribute.
      *
@@ -282,28 +321,26 @@
      *
      * @param element : node or also an HTMLElement
      * @param stateAttributeProperty : object that store the mapping of property against state and attribute.
-     * @param dataGetterValue : object that get the current value of the data.
+     * @param data : current value of the data.
      * @param dataState : state value of the object.
+     * @param assetGetter : callback to get the asset of the context element.
      */
-    const updateWatchAttribute = (element, stateAttributeProperty, dataGetterValue, dataState) => {
-        const data = dataGetterValue.data;
+    const updateWatchAttribute = (element, stateAttributeProperty, data, dataState, assetGetter) => {
         const attributeProps = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
         if (hasNoValue(attributeProps)) {
             return;
         }
-        attributeProps.forEach((property, attribute) => {
-            const val = extractValue(data, property);
-            if (isValidAttribute(attribute)) {
-                element.setAttribute(attribute, val);
+        attributeProps.forEach((typeProperty, attribute) => {
+            const watchProperty = typeProperty.get(DATA_WATCH_ATTRIBUTE);
+            const assetProperty = typeProperty.get(DATA_ASSET_ATTRIBUTE);
+            let val = null;
+            if (hasValue(watchProperty)) {
+                val = extractValue(data, watchProperty);
             }
-            if (attribute in element) {
-                element[attribute] = val;
-                const eventName = composeChangeEventName(attribute);
-                element[eventName] = (val) => injectValue(data, property, val);
+            else if (hasValue(assetProperty)) {
+                val = assetGetter(assetProperty);
             }
-            if (attribute === 'content') {
-                element.innerHTML = val;
-            }
+            setPropertyValue(attribute, element, val, data, watchProperty);
         });
     };
     /**
@@ -345,7 +382,7 @@
         return attributeValue;
     }
     /**
-     * Function to extract the value of json from jsonpath
+     * Function to extract the value of json from jsonPath
      * @param data
      * @param prop
      */
@@ -363,7 +400,7 @@
         return null;
     };
     /**
-     * Function to extract the value of json from jsonpath
+     * Function to extract the value of json from jsonPath
      * @param data
      * @param prop
      * @param value
@@ -387,21 +424,22 @@
      * During initialization, DataRenderer scanned for the active-nodes against nodes property.
      * active-nodes are the node that contain active-attributes such as `watch|toggle|action`.
      *
-     * When the active nodes identifed, DataRenderer create AttributeEvaluator against each active-node, and store them in
+     * When the active nodes identified, DataRenderer create AttributeEvaluator against each active-node, and store them in
      * attributeEvaluators property.
      *
      * When DataRenderer.render invoked by the ContextElement, DataRenderer iterate all ActiveAttributes and call
-     * ActiveAttribte.render method.
+     * ActiveAttribute.render method.
      */
     class DataRenderer {
         /**
          * Constructor to setup the DataRenderer initialization.
          *
          * @param nodes is a cloned of ContextElement.template
+         * @param assetGetter
          * @param updateData
          * @param reducer
          */
-        constructor(nodes, updateData, reducer) {
+        constructor(nodes, assetGetter, updateData, reducer) {
             /**
              * Render with iterate all the AttributeEvaluators and call the AttributeEvaluator.render
              * @param getter
@@ -411,12 +449,13 @@
                 this.attributeEvaluators.forEach((attributeEvaluator) => attributeEvaluator.render());
             };
             this.nodes = nodes;
+            this.assetGetter = assetGetter;
             this.updateData = updateData;
             this.reducer = reducer;
-            const activeAttributes = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE];
+            const activeAttributes = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE, DATA_ASSET_ATTRIBUTE];
             const activeNodes = Array.from(activeNodesLookup(activeAttributes, this.nodes));
             const dataGetter = () => this.dataGetter();
-            this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, dataGetter, this.updateData, this.reducer));
+            this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, assetGetter, dataGetter, this.updateData, this.reducer, activeAttributes));
         }
     }
     /**
@@ -492,7 +531,7 @@
              * @param context
              */
             this.setData = (context) => {
-                this.dataSource = context(this.contextData);
+                this.contextData = context(this.contextData);
                 this.render();
             };
             /**
@@ -542,7 +581,7 @@
                 }
                 if (hasNoValue(this.renderer)) {
                     const dataNodes = this.template.map(node => node.cloneNode(true));
-                    this.renderer = new DataRenderer(dataNodes, this.updateDataCallback, this.reducer);
+                    this.renderer = new DataRenderer(dataNodes, this.getAsset, this.updateDataCallback, () => this.reducer);
                 }
                 const reversedNodes = [...this.renderer.nodes].reverse();
                 let anchorNode = document.createElement('template');
@@ -562,7 +601,6 @@
              * initAttribute is the method to initialize ContextElement attribute invoked each time connectedCallback is called.
              */
             this.initAttribute = () => {
-                // we are nt implementing here
             };
             /**
              * Populate the ContextElement template by storing the node child-nodes into template property.
@@ -572,11 +610,41 @@
                 this.template = Array.from(this.childNodes).filter(noEmptyTextNode());
                 this.innerHTML = ''; // we cleanup the innerHTML
             };
+            /**
+             * Get the assets from the current assets or the parent context element assets.
+             * @param key
+             */
+            this.getAsset = (key) => {
+                const assets = this.assets;
+                if (hasValue(assets) && key in assets) {
+                    return assets[key];
+                }
+                const superContextElement = this.superContextElement;
+                if (hasValue(superContextElement)) {
+                    return superContextElement.getAsset(key);
+                }
+                return null;
+            };
+            /**
+             * Get the super context element, this function will lookup to the parentNode which is instanceof ContextElement,
+             * If the parent node is instance of contextElement then this node will return it.
+             *
+             * @param parentNode
+             */
+            this.getSuperContextElement = (parentNode) => {
+                if (parentNode instanceof ContextElement) {
+                    return parentNode;
+                }
+                else if (hasValue(parentNode.parentNode)) {
+                    return this.getSuperContextElement(parentNode.parentNode);
+                }
+                return null;
+            };
             this.template = null;
             this.renderer = null;
             this.reducer = null;
-            // this is a data source
-            this.dataSource = {};
+            this.contextData = {};
+            this.assets = {};
         }
         /**
          * Get the value of data in this ContextElement
@@ -591,6 +659,7 @@
         set data(value) {
             this.setData(() => value);
         }
+        // noinspection JSUnusedGlobalSymbols
         /**
          * connectedCallback is invoked each time the custom element is appended into a document-connected element.
          * When connectedCallback invoked, it will initialize the active attribute, populate the template, and call
@@ -598,6 +667,7 @@
          * repopulate the template again.
          */
         connectedCallback() {
+            this.superContextElement = this.getSuperContextElement(this.parentNode);
             this.initAttribute();
             if (hasNoValue(this.template)) {
                 this.classList.add(HIDE_CLASS);
@@ -612,6 +682,13 @@
                 };
                 requestAnimationFrame(requestAnimationFrameCallback);
             }
+        }
+        // noinspection JSUnusedGlobalSymbols
+        /**
+         * Invoked each time the custom element is disconnected from the document's DOM.
+         */
+        disconnectedCallback() {
+            this.superContextElement = null;
         }
     }
 
@@ -670,21 +747,21 @@
              *
              */
             this.render = () => {
-                const dataSource = this.dataSource;
+                const contextData = this.contextData;
                 const template = this.template;
                 const renderers = this.renderers;
-                if (hasNoValue(dataSource) || hasNoValue(template)) {
+                if (hasNoValue(contextData) || hasNoValue(template)) {
                     return;
                 }
                 this.removeExpiredData();
                 let anchorNode = document.createElement('template');
                 this.append(anchorNode);
-                const dpLength = dataSource.length - 1;
-                [...dataSource].reverse().forEach((data, index) => {
+                const dpLength = contextData.length - 1;
+                [...contextData].reverse().forEach((data, index) => {
                     const dataKey = this.dataKeyPicker(data);
                     if (!renderers.has(dataKey)) {
                         const dataNode = template.map(node => node.cloneNode(true));
-                        const itemRenderer = new DataRenderer(dataNode, this.updateDataCallback, this.reducer);
+                        const itemRenderer = new DataRenderer(dataNode, this.getAsset, this.updateDataCallback, () => this.reducer);
                         renderers.set(dataKey, itemRenderer);
                     }
                     const itemRenderer = renderers.get(dataKey);
@@ -702,14 +779,14 @@
             };
             /**
              * Function to remove keys that is no longer exist in the ContextElement.renderers.
-             * When ContextElement received new data (dataSource),it will check the obsolate keys in the ContextElement.renderers.
+             * When ContextElement received new data (dataSource),it will check the obsolete keys in the ContextElement.renderers.
              * The obsolate keys along with the DataRenderer attach to it, removed from the ContextElement.renderers, and the template
              * node removed from the document.body.
              */
             this.removeExpiredData = () => {
                 const renderers = this.renderers;
-                const dataSource = this.dataSource;
-                const dataSourceKeys = dataSource.map(data => this.dataKeyPicker(data));
+                const contextData = this.contextData;
+                const dataSourceKeys = contextData.map(data => this.dataKeyPicker(data));
                 const prevKeys = Array.from(renderers.keys());
                 const discardedKeys = prevKeys.filter(key => dataSourceKeys.indexOf(key) < 0);
                 discardedKeys.forEach(discardedKey => {
@@ -726,16 +803,18 @@
             };
             this.renderers = new Map();
             this.dataKeyPicker = defaultDataKeyPicker;
-            this.dataSource = [];
+            this.contextData = [];
         }
+        // noinspection JSUnusedGlobalSymbols
         /**
          * Observed attributes in context element
          */
         static get observedAttributes() {
             return [DATA_KEY_ATTRIBUTE];
         }
+        // noinspection JSUnusedGlobalSymbols
         /**
-         * update the dataKeyField if theres a new change in the attribute.
+         * update the dataKeyField if there's a new change in the attribute.
          *
          * @param name of the attribute
          * @param oldValue

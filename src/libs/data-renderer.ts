@@ -40,7 +40,7 @@ export default class DataRenderer<DataSource> {
     /**
      * Callback that responsible to convert oldData into a newData based on the user action.
      */
-    private readonly reducer: Reducer<DataSource>;
+    private readonly reducer:() => Reducer<DataSource>;
 
     /**
      * Callback to get the latest ContextElement.data
@@ -65,7 +65,7 @@ export default class DataRenderer<DataSource> {
      * @param updateData
      * @param reducer
      */
-    constructor(nodes: ChildNode[],assetGetter:AssetGetter, updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource>) {
+    constructor(nodes: ChildNode[],assetGetter:AssetGetter, updateData: UpdateDataCallback<DataSource>, reducer:() => Reducer<DataSource>) {
         this.nodes = nodes;
         this.assetGetter = assetGetter;
         this.updateData = updateData;

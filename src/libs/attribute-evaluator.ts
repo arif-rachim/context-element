@@ -76,7 +76,7 @@ export default class AttributeEvaluator<Context> {
     /**
      * callback function that is called when an action is triggered by dom event.
      */
-    private readonly reducer: Reducer<Context>;
+    private readonly reducer: () => Reducer<Context>;
 
     // mapping for watch & assets
     private readonly stateAttributeProperty: Map<string,Map<string, Map<string, string>>> = null;
@@ -99,7 +99,7 @@ export default class AttributeEvaluator<Context> {
      * @param reducer : function to map data into a new one because of user action.
      * @param activeAttributes : attributes that is used to lookup the nodes
      */
-    constructor(activeNode: ChildNode,assetGetter:AssetGetter, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducer: Reducer<Context>,activeAttributes:string[]) {
+    constructor(activeNode: ChildNode,assetGetter:AssetGetter, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducer: () => Reducer<Context>,activeAttributes:string[]) {
         this.activeNode = activeNode;
         this.dataGetter = dataGetter;
         this.assetGetter = assetGetter;
@@ -110,6 +110,7 @@ export default class AttributeEvaluator<Context> {
         this.eventStateAction = mapEventStateAction(this.activeAttributeValue);
         this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue,[DATA_WATCH_ATTRIBUTE,DATA_ASSET_ATTRIBUTE]);
         this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue,DATA_TOGGLE_ATTRIBUTE);
+
         initEventListener(activeNode as HTMLElement, this.eventStateAction, dataGetter, updateData, reducer);
     }
 
@@ -264,7 +265,7 @@ const populateActiveAttributeValue = (element: HTMLElement,activeAttributes:stri
  * @param updateData
  * @param reducer
  */
-const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducer: Reducer<Context>) => {
+const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducer:() => Reducer<Context>) => {
     eventStateAction.forEach((stateAction: Map<string, string>, event: string) => {
 
         event = event.startsWith('on') ? event.substring('on'.length, event.length) : event;
@@ -278,12 +279,14 @@ const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<
             let dataState = dataGetterValue.data[STATE_PROPERTY];
             if (stateAction.has(dataState) || stateAction.has(STATE_GLOBAL)) {
                 updateData((oldData) => {
+
                     const type = stateAction.get(dataState) || stateAction.get(STATE_GLOBAL);
                     let data = dataGetterValue.data;
                     if('key' in dataGetterValue){
                         const arrayDataGetterValue = dataGetterValue as ArrayDataGetterValue<any>;
                         data = arrayDataGetterValue.data;
-                        return reducer(oldData, {
+                        debugger;
+                        return reducer()(oldData, {
                             type,
                             event,
                             data,
@@ -291,7 +294,7 @@ const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<
                             index: arrayDataGetterValue.index
                         });
                     }
-                    return reducer(oldData, {type,event});
+                    return reducer()(oldData, {type,event});
                 });
             }
         })

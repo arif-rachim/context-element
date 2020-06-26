@@ -1,4 +1,5 @@
 import {object, withKnobs} from "@storybook/addon-knobs";
+import "../../index";
 import {useJavascript} from "../useJavascript";
 import {ArrayContextElement} from "../../array-context-element";
 import {ArrayAction} from "../../types";
@@ -27,7 +28,8 @@ export const input = () => {
             name : 'Typescript'
         }]);
 
-        el.reducer = (array,action:ArrayAction<any>) => {
+        el.reducer = (array,action:ArrayAction<Data>) => {
+            debugger;
             let {type,event,index,data} = action;
             if (type === 'SET_FAVORITE') {
                 {

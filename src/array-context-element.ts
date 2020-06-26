@@ -112,7 +112,7 @@ export class ArrayContextElement<Context> extends ContextElement<Context[]> {
             const dataKey = this.dataKeyPicker(data);
             if (!renderers.has(dataKey)) {
                 const dataNode: ChildNode[] = template.map(node => node.cloneNode(true)) as ChildNode[];
-                const itemRenderer = new DataRenderer(dataNode,this.getAsset, this.updateDataCallback, this.reducer);
+                const itemRenderer = new DataRenderer(dataNode,this.getAsset, this.updateDataCallback, () => this.reducer);
                 renderers.set(dataKey, itemRenderer);
             }
             const itemRenderer = renderers.get(dataKey);

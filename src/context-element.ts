@@ -158,7 +158,7 @@ export class ContextElement<Context> extends HTMLElement {
         }
         if (hasNoValue(this.renderer)) {
             const dataNodes: ChildNode[] = this.template.map(node => node.cloneNode(true)) as ChildNode[];
-            this.renderer = new DataRenderer(dataNodes,this.getAsset, this.updateDataCallback, this.reducer);
+            this.renderer = new DataRenderer(dataNodes,this.getAsset, this.updateDataCallback,() => this.reducer);
         }
         const reversedNodes: Node[] = [...this.renderer.nodes].reverse();
         let anchorNode: Node = document.createElement('template');
