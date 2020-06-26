@@ -9,6 +9,7 @@
 <context-element id="myTodo">
     <form submit.action="ADD_TODO">
         <input input.action="SET_TODO" type="text" value.watch="todo.todo">
+        <div watch="todo.todo"></div>
         <button type="submit">Add</button>
     </form>
     <context-array data.key="id" data.watch="todoCollection" reducer.watch="todoReducer">

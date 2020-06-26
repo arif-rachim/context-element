@@ -1,8 +1,9 @@
-import {Action, Reducer} from "../../src/types";
+import {Action, ArrayAction, Reducer} from "../../src/types";
 import {ContextElement} from "../../src/context-element";
 import uuid from "../../src/libs/uuid";
 
-const todo = document.getElementById('myTodo') as ContextElement<Context, Context>;
+
+const todo = document.getElementById('myTodo') as ContextElement<Context>;
 
 type Todo = {
     id: string,
@@ -14,7 +15,7 @@ type Todo = {
 type Context = {
     todo?: Todo,
     todoCollection: Todo[],
-    todoReducer: Reducer<Todo[], Todo>
+    todoReducer: Reducer<Todo[]>
 }
 
 const DEFAULT_STATE: Context = {
@@ -24,7 +25,8 @@ const DEFAULT_STATE: Context = {
         id: uuid()
     },
     todoCollection: [],
-    todoReducer: (context: Todo[], action: Action<Todo>) => {
+    todoReducer: (context: Todo[], action: ArrayAction<Todo>) => {
+        debugger;
         switch (action.type) {
             case 'TOGGLE_CHECKBOX' : {
                 return [...context.slice(0, action.index), {
@@ -37,7 +39,7 @@ const DEFAULT_STATE: Context = {
     }
 };
 
-todo.reducer = (context: Context, action: Action<Context>) => {
+todo.reducer = (context: Context, action: ArrayAction<Todo>) => {
     switch (action.type) {
         case 'SET_TODO' : {
             const todo = {...context.todo};
@@ -45,13 +47,12 @@ todo.reducer = (context: Context, action: Action<Context>) => {
             return {...context, todo};
         }
         case 'ADD_TODO' : {
-            const newContext: Context = {...context, todoCollection: [...context.todoCollection, action.data.todo]};
+            const newContext: Context = {...context, todoCollection: [...context.todoCollection, context.todo]};
             newContext.todo = {id: uuid(), todo: '', done: false};
             return newContext;
         }
     }
     return {...context};
 };
-todo.onMounted(() => {
-    todo.data = DEFAULT_STATE;
-});
+
+todo.data = DEFAULT_STATE;
