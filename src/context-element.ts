@@ -27,11 +27,12 @@ import DataRenderer from "./libs/data-renderer";
  */
 export class ContextElement<Context> extends HTMLElement {
     public reducer: Reducer<Context>;
-
+    public assets:any;
     protected template: ChildNode[];
     protected renderer: DataRenderer<Context>;
     protected contextData: Context;
     protected onMountedCallback: () => void;
+    private superContextElement:ContextElement<any>;
 
     /**
      * Constructor sets default value of reducer to return the parameter immediately (param) => param.
@@ -42,6 +43,7 @@ export class ContextElement<Context> extends HTMLElement {
         this.renderer = null;
         this.reducer = null;
         this.contextData = {} as Context;
+        this.assets = {};
     }
 
     /**
@@ -87,6 +89,7 @@ export class ContextElement<Context> extends HTMLElement {
         this.onMountedCallback = onMountedListener;
     };
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * connectedCallback is invoked each time the custom element is appended into a document-connected element.
      * When connectedCallback invoked, it will initialize the active attribute, populate the template, and call
@@ -94,6 +97,7 @@ export class ContextElement<Context> extends HTMLElement {
      * repopulate the template again.
      */
     connectedCallback() {
+        this.superContextElement = this.getSuperContextElement(this.parentNode);
         this.initAttribute();
         if (hasNoValue(this.template)) {
             this.classList.add(HIDE_CLASS);
@@ -108,6 +112,14 @@ export class ContextElement<Context> extends HTMLElement {
             };
             requestAnimationFrame(requestAnimationFrameCallback);
         }
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Invoked each time the custom element is disconnected from the document's DOM.
+     */
+    disconnectedCallback(){
+        this.superContextElement = null;
     }
 
     /**
@@ -146,7 +158,7 @@ export class ContextElement<Context> extends HTMLElement {
         }
         if (hasNoValue(this.renderer)) {
             const dataNodes: ChildNode[] = this.template.map(node => node.cloneNode(true)) as ChildNode[];
-            this.renderer = new DataRenderer(dataNodes, this.updateDataCallback, this.reducer);
+            this.renderer = new DataRenderer(dataNodes,this.getAsset, this.updateDataCallback, this.reducer);
         }
         const reversedNodes: Node[] = [...this.renderer.nodes].reverse();
         let anchorNode: Node = document.createElement('template');
@@ -168,7 +180,6 @@ export class ContextElement<Context> extends HTMLElement {
      * initAttribute is the method to initialize ContextElement attribute invoked each time connectedCallback is called.
      */
     protected initAttribute = () => {
-        // we are nt implementing here
     };
 
     /**
@@ -179,5 +190,36 @@ export class ContextElement<Context> extends HTMLElement {
         this.template = Array.from(this.childNodes).filter(noEmptyTextNode());
         this.innerHTML = ''; // we cleanup the innerHTML
     };
-}
 
+
+    /**
+     * Get the assets from the current assets or the parent context element assets.
+     * @param key
+     */
+    public getAsset = (key:string):any => {
+        const assets = this.assets;
+        if(hasValue(assets) && key in assets){
+           return assets[key];
+        }
+        const superContextElement = this.superContextElement;
+        if(hasValue(superContextElement)){
+            return superContextElement.getAsset(key);
+        }
+        return null;
+    };
+
+    /**
+     * Get the super context element, this function will lookup to the parentNode which is instanceof ContextElement,
+     * If the parent node is instance of contextElement then this node will return it.
+     *
+     * @param parentNode
+     */
+    private getSuperContextElement = (parentNode:Node):ContextElement<any> =>{
+        if(parentNode instanceof ContextElement){
+            return parentNode;
+        }else if(hasValue(parentNode.parentNode)){
+            return this.getSuperContextElement(parentNode.parentNode);
+        }
+        return null;
+    };
+}

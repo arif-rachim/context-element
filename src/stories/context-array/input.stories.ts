@@ -29,12 +29,12 @@ export const input = () => {
 
         el.reducer = (array,action:ArrayAction<any>) => {
             let {type,event,index,data} = action;
-            switch (type) {
-                case 'SET_FAVORITE' : {
+            if (type === 'SET_FAVORITE') {
+                {
                     const newData = {
                         ...data,
                         name : (event.target as any).value
-                    }
+                    };
                     return [...array.slice(0,index),newData,...array.slice(index+1,array.length)]
                 }
             }
@@ -42,4 +42,4 @@ export const input = () => {
         }
     });
     return html;
-}
+};

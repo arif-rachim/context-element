@@ -48,6 +48,7 @@ export class ArrayContextElement<Context> extends ContextElement<Context[]> {
         this.contextData = [];
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Observed attributes in context element
      */
@@ -64,8 +65,9 @@ export class ArrayContextElement<Context> extends ContextElement<Context[]> {
         this.dataKeyPicker = dataKeyPicker;
     };
 
+    // noinspection JSUnusedGlobalSymbols
     /**
-     * update the dataKeyField if theres a new change in the attribute.
+     * update the dataKeyField if there's a new change in the attribute.
      *
      * @param name of the attribute
      * @param oldValue
@@ -110,7 +112,7 @@ export class ArrayContextElement<Context> extends ContextElement<Context[]> {
             const dataKey = this.dataKeyPicker(data);
             if (!renderers.has(dataKey)) {
                 const dataNode: ChildNode[] = template.map(node => node.cloneNode(true)) as ChildNode[];
-                const itemRenderer = new DataRenderer(dataNode, this.updateDataCallback, this.reducer);
+                const itemRenderer = new DataRenderer(dataNode,this.getAsset, this.updateDataCallback, this.reducer);
                 renderers.set(dataKey, itemRenderer);
             }
             const itemRenderer = renderers.get(dataKey);
@@ -129,7 +131,7 @@ export class ArrayContextElement<Context> extends ContextElement<Context[]> {
 
     /**
      * Function to remove keys that is no longer exist in the ContextElement.renderers.
-     * When ContextElement received new data (dataSource),it will check the obsolate keys in the ContextElement.renderers.
+     * When ContextElement received new data (dataSource),it will check the obsolete keys in the ContextElement.renderers.
      * The obsolate keys along with the DataRenderer attach to it, removed from the ContextElement.renderers, and the template
      * node removed from the document.body.
      */

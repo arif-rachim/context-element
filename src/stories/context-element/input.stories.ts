@@ -4,7 +4,7 @@ import {useJavascript} from "../useJavascript";
 
 export default { title: 'Context Element',decorators:[withKnobs] };
 
-export const input = (args:any) => {
+export const input = () => {
     const html = `<context-element id="myElement" style="display: flex;flex-direction: column">
                         <input type="text" input.action="SET_NAME" placeholder="Type something here ...">
                         <input type="text" value.watch="name" >
@@ -17,11 +17,11 @@ export const input = (args:any) => {
         const el = document.getElementById('myElement') as ContextElement<Data>;
         el.data = {
             name : 'This is example of binding'
-        }
+        };
         el.reducer = (data,action) => {
             const {event,type} = action;
-            switch (type) {
-                case 'SET_NAME' : {
+            if (type === 'SET_NAME') {
+                {
                     const name = (event.target as HTMLInputElement).value;
                     return {...data,name}
                 }

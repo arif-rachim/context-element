@@ -190,7 +190,7 @@ test('It should toggle when user change the data',(done)=>{
             }
         }
         return context;
-    }
+    };
 
     arrayContextElement.setAttribute(DATA_KEY_ATTRIBUTE, 'userId');
     arrayContextElement.data = generateRandomUser(5);
@@ -247,4 +247,50 @@ test('it should provide a default array if there is no object assigned to it',(d
         expect(divsToWatch.length).toBe(contextElement.data.length);
         done();
     });
+});
+
+test('It should assign the value from assets',(done)=>{
+    const contextElement = createArrayContextElement(`
+<div>
+    <div asset="kambing" class="kambing"></div>
+    <context-element reducer.asset="helloWorld">
+        <div watch="content" id="contend"></div>
+        <button click.action="SET_CONTENT" class="button-gila"></button>
+    </context-element>
+</div>
+    `);
+    contextElement.data = [{id:1},{id:2},{id:3},{id:4}];
+    contextElement.setAttribute('data.key','id');
+    contextElement.assets = {
+        kambing : 'kambing',
+        helloWorld : (data:any,action:any) => {
+            const {type}  = action;
+            if (type === 'SET_CONTENT') {
+                {
+                    return {...data,content:'Hello World'}
+                }
+            }
+            return {...data}
+        }
+    };
+    setTimeout(() => {
+        const buttons = contextElement.querySelectorAll('.button-gila');
+        const contents = contextElement.querySelectorAll('.contend');
+        const kambings = contextElement.querySelectorAll('.kambing');
+        expect(buttons.length).toBe(contextElement.data.length);
+        kambings.forEach(kambing => {
+            expect(kambing.innerHTML).toBe("kambing");
+        });
+        contents.forEach(content => {
+            expect(content.innerHTML).toBe("undefined");
+        });
+        buttons.forEach((button:any) => {
+            button.click()
+        });
+        contents.forEach(content => {
+            expect(content.innerHTML).toBe("Hello World");
+        });
+        done();
+    },100);
+
 });

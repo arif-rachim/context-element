@@ -88,8 +88,8 @@ test('It should perform update only against the node leaf',(done) => {
         addressReducer : (address:any,action:Action) => {
             const type:string = action.type;
             const event:any = action.event;
-            switch (type) {
-                case 'SET_CITY' : {
+            if (type === 'SET_CITY') {
+                {
                     const city = event.target.value;
                     return {...address,city}
                 }
@@ -116,7 +116,7 @@ test('it should provide a default object if there is no object assigned to it',(
     <div watch="nama" content.enabled.watch="nama_panjang" content.disabled.watch="nama_pendek" id="divToWatch"></div>
     <button click.action="TOGGLE_STATE" id="myButton">Click</button>
 </div>`);
-    contextElement.reducer = (data,action) => {
+    contextElement.reducer = (data) => {
         data.nama = 'Okay';
         data.nama_panjang = 'Okay Deh';
         data.nama_pendek = 'Deh';
@@ -134,3 +134,71 @@ test('it should provide a default object if there is no object assigned to it',(
         done();
     });
 });
+
+test('it should get the assets from the context element',(done) => {
+    const contextElement = createContextElement(`
+        <div watch="hello"></div>
+        <context-element>
+            <div>
+                <context-element id="child">
+                
+                </context-element>
+            </div>
+        </context-element>
+    `);
+    const myReducer = (state:any) => {
+        return {...state}
+    };
+    contextElement.assets = {
+        myReducer,
+        name : 'sedap'
+    };
+    contextElement.onMounted(() => {
+        const childContextElement = document.getElementById('child') as ContextElement<any>;
+
+        expect(childContextElement.getAsset('myReducer')).toBe(myReducer);
+        expect(childContextElement.getAsset('name')).toBe('sedap');
+        childContextElement.assets = {
+            name : 'kuncup'
+        };
+        expect(childContextElement.getAsset('name')).toBe('kuncup');
+        done();
+    });
+
+});
+
+test('It should assign the value from assets',(done)=>{
+    const contextElement = createContextElement(`
+<div>
+    <div asset="kambing" id="kambingId"></div>
+    <context-element reducer.asset="helloWorld">
+        <div watch="content" id="contentDiv"></div>
+        <button click.action="SET_CONTENT" id="buttonGila"></button>
+    </context-element>
+</div>
+    `);
+    contextElement.assets = {
+        kambing : 'kambing',
+        helloWorld : (data:any,action:any) => {
+            const {type}  = action;
+            if (type === 'SET_CONTENT') {
+                {
+                    return {...data,content:'Hello World'}
+                }
+            }
+            return {...data}
+        }
+    };
+    setTimeout(() => {
+        const myButton = document.getElementById('buttonGila');
+        const contentDiv = document.getElementById('contentDiv');
+        const kambingDiv = document.getElementById('kambingId');
+        expect(kambingDiv.innerHTML).toBe("kambing");
+        expect(contentDiv.innerHTML).toBe("undefined");
+        myButton.click();
+        expect(contentDiv.innerHTML).toBe('Hello World');
+        done();
+    },100);
+
+});
+

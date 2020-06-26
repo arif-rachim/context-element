@@ -35,4 +35,4 @@ export const timer = () => {
             },1000);
     });
     return html;
-}
+};

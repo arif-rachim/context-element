@@ -1,8 +1,10 @@
 import {
     ARRAY_CONTEXT_ELEMENT_TAG_NAME,
+    AssetGetter,
     contains,
     CONTEXT_ELEMENT_TAG_NAME,
     DATA_ACTION_ATTRIBUTE,
+    DATA_ASSET_ATTRIBUTE,
     DATA_TOGGLE_ATTRIBUTE,
     DATA_WATCH_ATTRIBUTE,
     DataGetter,
@@ -17,11 +19,11 @@ import AttributeEvaluator from "./attribute-evaluator";
  * During initialization, DataRenderer scanned for the active-nodes against nodes property.
  * active-nodes are the node that contain active-attributes such as `watch|toggle|action`.
  *
- * When the active nodes identifed, DataRenderer create AttributeEvaluator against each active-node, and store them in
+ * When the active nodes identified, DataRenderer create AttributeEvaluator against each active-node, and store them in
  * attributeEvaluators property.
  *
  * When DataRenderer.render invoked by the ContextElement, DataRenderer iterate all ActiveAttributes and call
- * ActiveAttribte.render method.
+ * ActiveAttribute.render method.
  */
 export default class DataRenderer<DataSource> {
 
@@ -51,21 +53,27 @@ export default class DataRenderer<DataSource> {
     private readonly attributeEvaluators: AttributeEvaluator<DataSource>[];
 
     /**
+     * Callback function to get the asset from context-element
+     */
+    private readonly assetGetter:AssetGetter;
+
+    /**
      * Constructor to setup the DataRenderer initialization.
      *
      * @param nodes is a cloned of ContextElement.template
+     * @param assetGetter
      * @param updateData
      * @param reducer
      */
-    constructor(nodes: ChildNode[], updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource>) {
+    constructor(nodes: ChildNode[],assetGetter:AssetGetter, updateData: UpdateDataCallback<DataSource>, reducer: Reducer<DataSource>) {
         this.nodes = nodes;
+        this.assetGetter = assetGetter;
         this.updateData = updateData;
         this.reducer = reducer;
-
-        const activeAttributes: (string)[] = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE];
+        const activeAttributes: (string)[] = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE,DATA_ASSET_ATTRIBUTE];
         const activeNodes: ChildNode[] = Array.from(activeNodesLookup(activeAttributes, this.nodes));
         const dataGetter = () => this.dataGetter();
-        this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, dataGetter, this.updateData, this.reducer));
+        this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode,assetGetter, dataGetter, this.updateData, this.reducer,activeAttributes));
     }
 
     /**

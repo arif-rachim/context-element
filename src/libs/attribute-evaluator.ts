@@ -1,8 +1,10 @@
 import {
     ArrayDataGetterValue,
+    AssetGetter,
     composeChangeEventName,
     contains,
     DATA_ACTION_ATTRIBUTE,
+    DATA_ASSET_ATTRIBUTE,
     DATA_TOGGLE_ATTRIBUTE,
     DATA_WATCH_ATTRIBUTE,
     DataGetter,
@@ -62,6 +64,11 @@ export default class AttributeEvaluator<Context> {
     private readonly dataGetter: DataGetter<Context>;
 
     /**
+     * AssetGetter is a callback function to get the asset from the context-element
+     */
+    private readonly assetGetter : AssetGetter;
+
+    /**
      * DataUpdateCallback is a callback to inform DataRenderer that a new copy of data is available.
      */
     private readonly updateData: UpdateDataCallback<Context>;
@@ -71,8 +78,8 @@ export default class AttributeEvaluator<Context> {
      */
     private readonly reducer: Reducer<Context>;
 
-    // mapping for watch
-    private readonly stateAttributeProperty: Map<string, Map<string, string>> = null;
+    // mapping for watch & assets
+    private readonly stateAttributeProperty: Map<string,Map<string, Map<string, string>>> = null;
 
     // mapping for toggle
     private readonly attributeStateProperty: Map<string, Map<string, string>> = null;
@@ -86,20 +93,23 @@ export default class AttributeEvaluator<Context> {
      * The last process would be initialization of event listener.
      *
      * @param activeNode : node that contains active-attribute.
+     * @param assetGetter : callback function to get the asset from context-data
      * @param dataGetter : callback function to return current data.
      * @param updateData : callback function to inform DataRenderer that a new data is created because of user action.
      * @param reducer : function to map data into a new one because of user action.
+     * @param activeAttributes : attributes that is used to lookup the nodes
      */
-    constructor(activeNode: ChildNode, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducer: Reducer<Context>) {
+    constructor(activeNode: ChildNode,assetGetter:AssetGetter, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducer: Reducer<Context>,activeAttributes:string[]) {
         this.activeNode = activeNode;
         this.dataGetter = dataGetter;
+        this.assetGetter = assetGetter;
         this.updateData = updateData;
         this.reducer = reducer;
-        this.activeAttributeValue = populateActiveAttributeValue(activeNode as HTMLElement);
+        this.activeAttributeValue = populateActiveAttributeValue(activeNode as HTMLElement,activeAttributes);
         this.defaultAttributeValue = populateDefaultAttributeValue(activeNode as HTMLElement);
         this.eventStateAction = mapEventStateAction(this.activeAttributeValue);
-        this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue);
-        this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue);
+        this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue,[DATA_WATCH_ATTRIBUTE,DATA_ASSET_ATTRIBUTE]);
+        this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue,DATA_TOGGLE_ATTRIBUTE);
         initEventListener(activeNode as HTMLElement, this.eventStateAction, dataGetter, updateData, reducer);
     }
 
@@ -115,7 +125,8 @@ export default class AttributeEvaluator<Context> {
         const data: any = dataGetterValue.data;
         const dataState = data[STATE_PROPERTY];
         const defaultAttributeValue = this.defaultAttributeValue;
-        updateWatchAttribute(element, stateAttributeProperty, dataGetterValue, dataState);
+        const assetGetter = this.assetGetter;
+        updateWatchAttribute(element, stateAttributeProperty, data, dataState,assetGetter);
         updateToggleAttribute(element, attributeStateProperty, dataState, defaultAttributeValue);
     }
 }
@@ -153,28 +164,38 @@ const mapEventStateAction = (attributeValue: Map<string, string>) => {
 /**
  * mapStateAttributeProperty is a function to convert `watch` active-attribute to property group by first state, then attribute.
  * @param attributeValue
+ * @param attributePrefixes
  */
-const mapStateAttributeProperty = (attributeValue: Map<string, string>) => {
-    const stateAttributeProperty: Map<string, Map<string, string>> = new Map<string, Map<string, string>>();
+const mapStateAttributeProperty = (attributeValue: Map<string, string>,attributePrefixes:string[]) => {
+    const stateAttributeProperty: Map<string,Map<string, Map<string, string>>> = new Map<string,Map<string, Map<string, string>>>();
     attributeValue.forEach((value, attributeName) => {
-        if (attributeName.endsWith(DATA_WATCH_ATTRIBUTE)) {
+        if (attributePrefixes.filter(attributePrefix => attributeName.endsWith(attributePrefix)).length > 0) {
+
             const attributes = attributeName.split('.');
             let attribute = '';
             let state = '';
+            let type = '';
             if (attributes.length === 1) {
                 attribute = 'content';
                 state = STATE_GLOBAL;
+                type = attributes[0];
             } else if (attributes.length === 2) {
                 attribute = attributes[0];
                 state = STATE_GLOBAL;
+                type = attributes[1];
             } else if (attributes.length > 2) {
                 attribute = attributes[0];
                 state = attributes[1];
+                type = attributes[2];
             }
             if (!stateAttributeProperty.has(state)) {
-                stateAttributeProperty.set(state, new Map<string, string>());
+                stateAttributeProperty.set(state, new Map<string, Map<string,string>>());
             }
-            stateAttributeProperty.get(state).set(attribute, value);
+            const attributeProperty = stateAttributeProperty.get(state);
+            if(!attributeProperty.has(attribute)){
+                attributeProperty.set(attribute,new Map<string,string>());
+            }
+            attributeProperty.get(attribute).set(type,value);
         }
     });
     return stateAttributeProperty;
@@ -183,11 +204,12 @@ const mapStateAttributeProperty = (attributeValue: Map<string, string>) => {
 /**
  * mapAttributeStateProperty is a function to convert `toggle` active-attribute to property group by first attribute, then state.
  * @param attributeValue
+ * @param attributePrefix
  */
-const mapAttributeStateProperty = (attributeValue: Map<string, string>) => {
+const mapAttributeStateProperty = (attributeValue: Map<string, string>,attributePrefix:string) => {
     const attributeStateProperty: Map<string, Map<string, string>> = new Map<string, Map<string, string>>();
     attributeValue.forEach((value, attributeName) => {
-        if (attributeName.endsWith(DATA_TOGGLE_ATTRIBUTE)) {
+        if (attributeName.endsWith(attributePrefix)) {
             const attributes = attributeName.split('.');
             let attribute = '';
             let state = '';
@@ -209,10 +231,11 @@ const mapAttributeStateProperty = (attributeValue: Map<string, string>) => {
 /**
  * populateActiveAttributeValue will extract the active-attributes from the element.
  * @param element
+ * @param activeAttributes
  */
-const populateActiveAttributeValue = (element: HTMLElement) => {
+const populateActiveAttributeValue = (element: HTMLElement,activeAttributes:string[]) => {
     const attributeValue: Map<string, string> = new Map<string, string>();
-    element.getAttributeNames().filter(name => contains(name, [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE])).forEach(attributeName => {
+    element.getAttributeNames().filter(name => contains(name, activeAttributes)).forEach(attributeName => {
         attributeValue.set(attributeName, element.getAttribute(attributeName));
         element.removeAttribute(attributeName);
     });
@@ -276,6 +299,30 @@ const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<
 };
 
 /**
+ * Function to set property of an element, it will check if the attribute is a valid attribute, if its a valid attribute
+ * then it will set the attribute value, and if the attribute is element property, then the element will be assigned for the attribute.
+ *
+ * @param attribute
+ * @param element
+ * @param val
+ * @param data
+ * @param property
+ */
+function setPropertyValue(attribute: string, element: any, val: any, data: any, property: string) {
+    if (isValidAttribute(attribute)) {
+        element.setAttribute(attribute, val);
+    }
+    if (attribute in element) {
+        element[attribute] = val;
+        const eventName = composeChangeEventName(attribute);
+        element[eventName] = (val: any) => injectValue(data, property, val);
+    }
+    if (attribute === 'content') {
+        element.innerHTML = val;
+    }
+}
+
+/**
  * UpdateWatchAttribute is a method that will perform update against `watch` active-attribute.
  *
  * UpdateWatchAttribute will get the current attributeProps from stateAttributeProps based on the data.state.
@@ -289,28 +336,25 @@ const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<
  *
  * @param element : node or also an HTMLElement
  * @param stateAttributeProperty : object that store the mapping of property against state and attribute.
- * @param dataGetterValue : object that get the current value of the data.
+ * @param data : current value of the data.
  * @param dataState : state value of the object.
+ * @param assetGetter : callback to get the asset of the context element.
  */
-const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, Map<string, string>>, dataGetterValue: DataGetterValue<any>, dataState: string) => {
-    const data = dataGetterValue.data;
+const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, Map<string, Map<string,string>>>, data:any, dataState: string,assetGetter:AssetGetter) => {
     const attributeProps = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
     if (hasNoValue(attributeProps)) {
         return;
     }
-    attributeProps.forEach((property: string, attribute: string) => {
-        const val = extractValue(data, property);
-        if (isValidAttribute(attribute)) {
-            element.setAttribute(attribute, val);
+    attributeProps.forEach((typeProperty: Map<string,string>, attribute: string) => {
+        const watchProperty = typeProperty.get(DATA_WATCH_ATTRIBUTE);
+        const assetProperty = typeProperty.get(DATA_ASSET_ATTRIBUTE);
+        let val = null;
+        if(hasValue(watchProperty)){
+            val = extractValue(data, watchProperty);
+        }else if(hasValue(assetProperty)){
+            val = assetGetter(assetProperty);
         }
-        if (attribute in element) {
-            element[attribute] = val;
-            const eventName = composeChangeEventName(attribute);
-            element[eventName] = (val: any) => injectValue(data, property, val);
-        }
-        if (attribute === 'content') {
-            element.innerHTML = val;
-        }
+        setPropertyValue(attribute, element, val, data, watchProperty);
     });
 };
 
@@ -358,7 +402,7 @@ function populateDefaultAttributeValue(element: HTMLElement) {
 }
 
 /**
- * Function to extract the value of json from jsonpath
+ * Function to extract the value of json from jsonPath
  * @param data
  * @param prop
  */
@@ -377,7 +421,7 @@ const extractValue = (data: any, prop: string) => {
 
 
 /**
- * Function to extract the value of json from jsonpath
+ * Function to extract the value of json from jsonPath
  * @param data
  * @param prop
  * @param value

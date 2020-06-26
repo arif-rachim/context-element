@@ -14,7 +14,7 @@ export type Renderer = { render: (dataGetter: () => any) => void, nodes: ChildNo
 export type DataSetter<T> = (oldData: T) => T;
 export type ToString<T> = (data: T) => string;
 export type DataGetter<T> = () => DataGetterValue<T> | ArrayDataGetterValue<T>;
-
+export type AssetGetter = (key:string) => any;
 export interface DataGetterValue<T> {
     data: T;
 }
@@ -34,6 +34,8 @@ export const contains = (text: string, texts: string[]) => texts.reduce((acc, tx
 export const DATA_WATCH_ATTRIBUTE = 'watch';
 export const DATA_ACTION_ATTRIBUTE = 'action';
 export const DATA_TOGGLE_ATTRIBUTE = 'toggle';
+export const DATA_ASSET_ATTRIBUTE = 'asset';
+
 export const STATE_PROPERTY = '_state';
 export const STATE_GLOBAL = '*';
 export const DATA_KEY_ATTRIBUTE = 'data.key';

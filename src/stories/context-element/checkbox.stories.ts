@@ -25,8 +25,8 @@ export const checkbox = () => {
         });
         el.reducer = (data,action) => {
             const {type,event} = action;
-            switch (type) {
-                case 'TOGGLE_CHECKBOX' : {
+            if (type === 'TOGGLE_CHECKBOX') {
+                {
                     const isDone =  (event.target as HTMLInputElement).checked;
                     return {...data,isDone}
                 }
@@ -35,4 +35,4 @@ export const checkbox = () => {
         }
     });
     return html;
-}
+};
