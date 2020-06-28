@@ -14,7 +14,7 @@
 
 ### installation
 
-Direct usage
+From CDN
 ```html
 <script src="https://unpkg.com/context-element"></script>
 ```
@@ -26,9 +26,13 @@ npm install context-element
 
 
 ## Motivation
-To build interactive html pages and display data dynamically, we can use a front-end `framework/library` that has an engine to detect data changes and render these pages in a browser efficiently.
+Currently to be able to render objects or arrays on html pages we can use the template engine, or UI framework.
 
-The framework will organize how pages are displayed based on the template that we define as components.
+Unfortunately template engine forces us to use syntax that is not the same as how elements in html are structured.
+
+In addition to the UI Framework library sometimes has a file size that is not small, we also have to download the framework tools to start the project.
+
+WebComponent aims to enable us to create new elements that are recognized by the browser. It would be great, if there is a web component, which uses the html structure as templating, and works efficiently like the UI Framework.
 
 **_`context-element`_** have similarities as frameworks, but context-elements are not frameworks engine, rather than simple **`HTMLElement`** that can organize how data is displayed based on templates.
 
@@ -42,7 +46,6 @@ The framework will organize how pages are displayed based on the template that w
     <body>
         <context-element id="myElement">
             <div>Current time is</div>
-            <!-- attribute watch is watching data `time` property -->
             <div watch="time"></div>
         </context-element>
         <script>
@@ -89,17 +92,26 @@ To bind the attribute or innerHTML of the template, we can use the `watch` attri
 </context-element>
 ```
 
+### Active-Attribute
+Context-element templates are html code that has special attributes that we refer to as active-attributes. Active-attribute is an html attribute that has a specific keyword or what we call an active-attribute type (AAT), and each AAT works differently.
+At the moment there are 4 AATs supported by context elements:
+1. Watch
+2. Assets
+3. Toggle
+4. Action
+
 ### watch
-The keyword `watch` is used by context-components to indicate that an attribute is an active-attribute. Besides `watch`
-active-attribute in context-components also marked with the `toggle`,`asset` and` action` keywords.
+Watch, is an Active Attribute Type (AAT) that is used to bind property data, with html elements
 
 In the following example `<input value.watch =" time ">` means that the context-element will set the `value` attribute with a value
 from the `time` property of the data (`data.time`).
 
 ### action
-The keyword action used by context-component to indicate an attribute is an event listener.
-To consume the event, we must use the `reducer` function. Reducer is a pure function that is
-receive the previous data and action, and return the next data. `(previousData, action) => nextData`.
+Action, is an AAT used to listen to html Event elements. 
+The html Event is wrapped into an action, then given to the reducer. 
+Users can implement reducers, to create new data based on old data and action objects. 
+Html event elements for example are "onclick", "onmouseenter", "onmouseleave", "onsubmit", "oninput" and others.
+We can also eliminate the use of prefix on when we declare AAT actions.
 
 An action object in `context-element` consists of 2 attributes, type and event.
 
