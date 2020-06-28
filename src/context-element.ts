@@ -22,7 +22,7 @@ import DataRenderer from "./libs/data-renderer";
  *
  * ContextElement will populate the data into template by looking at the attribute which has watch keyword in it.
  * These attribute which has keyword `watch` in it are also known as active-attribute.
- * There are 3 kinds of active-attribute,  (watch / toggle / action). each attribute works with a different mechanism when ContextElement renders the data.
+ * There are 4 kinds of active-attribute,  (watch / toggle / action / assets). each attribute works with a different mechanism when ContextElement renders the data.
  *
  */
 export class ContextElement<Context> extends HTMLElement {

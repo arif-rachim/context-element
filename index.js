@@ -270,6 +270,7 @@
                         if ('key' in dataGetterValue) {
                             const arrayDataGetterValue = dataGetterValue;
                             data = arrayDataGetterValue.data;
+                            debugger;
                             return reducer()(oldData, {
                                 type,
                                 event,
@@ -511,7 +512,7 @@
      *
      * ContextElement will populate the data into template by looking at the attribute which has watch keyword in it.
      * These attribute which has keyword `watch` in it are also known as active-attribute.
-     * There are 3 kinds of active-attribute,  (watch / toggle / action). each attribute works with a different mechanism when ContextElement renders the data.
+     * There are 4 kinds of active-attribute,  (watch / toggle / action / assets). each attribute works with a different mechanism when ContextElement renders the data.
      *
      */
     class ContextElement extends HTMLElement {

@@ -8,8 +8,8 @@ export interface ArrayAction<T> extends Action{
     key:string;
 }
 
-export type Reducer<T> = (data: T, action: Action|ArrayAction<T>) => T
-
+export type Reducer<T> = (data: T, action: Action|ArrayAction<T>) => T;
+export type ReducerGetter<T> = () => Reducer<T>;
 export type Renderer = { render: (dataGetter: () => any) => void, nodes: ChildNode[] };
 export type DataSetter<T> = (oldData: T) => T;
 export type ToString<T> = (data: T) => string;
