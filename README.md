@@ -24,6 +24,12 @@ npm module
 npm install context-element
 ```
 
+## Why context-element
+1. Because context-elements are native HTMLElement.
+2. Because famous UI Framework cuts your bandwidth budget.
+3. Because it doesn't use virtual dom, memory usage is very efficient.
+4. Because the syntax is very simple, and the same source-code can be used by UX designer tools.
+5. Because it has been proven by using reducer, it is easier to monitor app behaviour by using one-way data flow.
 
 ## Motivation
 Currently to be able to render objects or arrays on html pages we can use the template engine, or UI framework.
