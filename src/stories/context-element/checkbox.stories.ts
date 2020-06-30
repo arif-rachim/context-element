@@ -2,7 +2,7 @@ import {ContextElement} from "../../context-element";
 import {object, withKnobs} from "@storybook/addon-knobs";
 import {useJavascript} from "../useJavascript";
 
-export default { title: 'Context Element',decorators:[withKnobs] };
+export default {title: 'Context Element', decorators: [withKnobs]};
 
 export const checkbox = () => {
     const html = `<context-element id="myElement">
@@ -15,20 +15,20 @@ export const checkbox = () => {
 
     useJavascript(() => {
 
-        interface Data{
-            isDone : boolean
+        interface Data {
+            isDone: boolean
         }
 
         const el = document.getElementById('myElement') as ContextElement<Data>;
-        el.data = object('Default State',{
-            isDone : false
+        el.data = object('Default State', {
+            isDone: false
         });
-        el.reducer = (data,action) => {
-            const {type,event} = action;
+        el.reducer = (data, action) => {
+            const {type, event} = action;
             if (type === 'TOGGLE_CHECKBOX') {
                 {
-                    const isDone =  (event.target as HTMLInputElement).checked;
-                    return {...data,isDone}
+                    const isDone = (event.target as HTMLInputElement).checked;
+                    return {...data, isDone}
                 }
             }
             return {...data}

@@ -1,12 +1,16 @@
 import {
-    Action, ArrayAction, ArrayDataGetterValue, ChildAction,
+    Action,
+    ActionPath,
+    ArrayAction,
+    CHILD_ACTION_EVENT,
+    ChildAction,
     composeChangeEventName,
     DataGetter,
     DataSetter,
     hasNoValue,
     hasValue,
     HIDE_CLASS,
-    Reducer, STATE_GLOBAL
+    Reducer
 } from "./types";
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import DataRenderer from "./libs/data-renderer";
@@ -36,13 +40,13 @@ import DataRenderer from "./libs/data-renderer";
  */
 export class ContextElement<Context> extends HTMLElement {
     public reducer: Reducer<Context>;
-    public assets:any;
+    public assets: any;
+    public dataPath: string;
     protected template: ChildNode[];
     protected renderer: DataRenderer<Context>;
     protected contextData: Context;
     protected onMountedCallback: () => void;
-    private superContextElement:ContextElement<any>;
-    public dataPath:string;
+    private superContextElement: ContextElement<any>;
 
     /**
      * Constructor sets default value of reducer to return the parameter immediately (param) => param.
@@ -122,7 +126,7 @@ export class ContextElement<Context> extends HTMLElement {
                 }
             };
             //requestAnimationFrame(requestAnimationFrameCallback);
-            setTimeout(requestAnimationFrameCallback,0);
+            setTimeout(requestAnimationFrameCallback, 0);
         }
     }
 
@@ -130,9 +134,39 @@ export class ContextElement<Context> extends HTMLElement {
     /**
      * Invoked each time the custom element is disconnected from the document's DOM.
      */
-    disconnectedCallback(){
+    disconnectedCallback() {
         this.superContextElement = null;
     }
+
+    /**
+     * Get the assets from the current assets or the parent context element assets.
+     * @param key
+     */
+    public getAsset = (key: string): any => {
+        const assets = this.assets;
+        if (hasValue(assets) && key in assets) {
+            return assets[key];
+        }
+        const superContextElement = this.superContextElement;
+        if (hasValue(superContextElement)) {
+            return superContextElement.getAsset(key);
+        }
+        return null;
+    };
+
+    /**
+     * Convert action to ActionPath
+     * @param arrayAction
+     */
+    actionToPath = (arrayAction: ArrayAction<any>) => {
+        const actionPath: ActionPath = {path: this.dataPath};
+        if (hasValue(arrayAction.key)) {
+            actionPath.key = arrayAction.key;
+            actionPath.index = arrayAction.index;
+            actionPath.data = arrayAction.data;
+        }
+        return actionPath;
+    };
 
     /**
      * updateDataCallback is a callback function that will set the data and call `dataChanged` method.
@@ -151,25 +185,30 @@ export class ContextElement<Context> extends HTMLElement {
         }
     };
 
-    protected updateParentDataCallback = (action:ArrayAction<any>|Action) => {
-        const arrayAction =  (action as ArrayAction<any>);
-        const childAction:ChildAction = {
-            event : action.event,
-            path:this.dataPath,
-            type:action.type,
-            index : arrayAction.index,
-            key : arrayAction.key,
-            data : arrayAction.data
+    /**
+     * To bubble child action to the parent.
+     * @param action
+     */
+    protected bubbleChildAction = (action: ArrayAction<any> | Action) => {
+        const childAction: ChildAction = {
+            event: action.event,
+            type: action.type,
+            childActions: [this.actionToPath(action as ArrayAction<any>)]
         };
-        this.superContextElement?.updateDataFromChild(childAction);
+        this.dispatchDetailEvent(childAction);
     };
 
-    protected updateDataFromChild = (action:ChildAction) => {
+    /**
+     * Updating current data from child action
+     * @param action
+     * @param currentAction
+     */
+    protected updateDataFromChild = (action: ChildAction, currentAction: ArrayAction<any>) => {
         const reducer = this.reducer;
-        this.updateDataCallback((oldData:Context) => {
-            if(hasNoValue(reducer)){
-                action.path = `${this.dataPath}.${action.path}`;
-                this.superContextElement?.updateDataFromChild(action);
+        this.updateDataCallback((oldData: Context) => {
+            if (hasNoValue(reducer)) {
+                action.childActions = [this.actionToPath(currentAction), ...action.childActions];
+                this.dispatchDetailEvent(action);
                 return oldData;
             }
             return reducer(oldData, action);
@@ -195,7 +234,7 @@ export class ContextElement<Context> extends HTMLElement {
         }
         if (hasNoValue(this.renderer)) {
             const dataNodes: ChildNode[] = this.template.map(node => node.cloneNode(true)) as ChildNode[];
-            this.renderer = new DataRenderer(dataNodes,this.getAsset, this.updateDataCallback,() => this.reducer,this.updateParentDataCallback);
+            this.renderer = new DataRenderer(dataNodes, this.getAsset, this.updateDataCallback, () => this.reducer, this.bubbleChildAction, this.updateDataFromChild);
         }
         const reversedNodes: Node[] = [...this.renderer.nodes].reverse();
         let anchorNode: Node = document.createElement('template');
@@ -208,7 +247,7 @@ export class ContextElement<Context> extends HTMLElement {
         }
 
         const data = this.contextData;
-        const dataGetter:DataGetter<Context> = () => ({data});
+        const dataGetter: DataGetter<Context> = () => ({data});
         this.renderer.render(dataGetter);
         this.lastChild.remove();
     };
@@ -220,6 +259,15 @@ export class ContextElement<Context> extends HTMLElement {
     };
 
     /**
+     * Dispatch child action event.
+     * @param childAction
+     */
+    private dispatchDetailEvent = (childAction: ChildAction) => {
+        const event = new CustomEvent(CHILD_ACTION_EVENT, {detail: childAction, cancelable: true, bubbles: true});
+        this.dispatchEvent(event);
+    };
+
+    /**
      * Populate the ContextElement template by storing the node child-nodes into template property.
      * Once the child nodes is stored in template property, ContextElement will clear its content by calling this.innerHTML = ''
      */
@@ -228,33 +276,16 @@ export class ContextElement<Context> extends HTMLElement {
         this.innerHTML = ''; // we cleanup the innerHTML
     };
 
-
-    /**
-     * Get the assets from the current assets or the parent context element assets.
-     * @param key
-     */
-    public getAsset = (key:string):any => {
-        const assets = this.assets;
-        if(hasValue(assets) && key in assets){
-           return assets[key];
-        }
-        const superContextElement = this.superContextElement;
-        if(hasValue(superContextElement)){
-            return superContextElement.getAsset(key);
-        }
-        return null;
-    };
-
     /**
      * Get the super context element, this function will lookup to the parentNode which is instanceof ContextElement,
      * If the parent node is instance of contextElement then this node will return it.
      *
      * @param parentNode
      */
-    private getSuperContextElement = (parentNode:Node):ContextElement<any> =>{
-        if(parentNode instanceof ContextElement){
+    private getSuperContextElement = (parentNode: Node): ContextElement<any> => {
+        if (parentNode instanceof ContextElement) {
             return parentNode;
-        }else if(hasValue(parentNode.parentNode)){
+        } else if (hasValue(parentNode.parentNode)) {
             return this.getSuperContextElement(parentNode.parentNode);
         }
         return null;

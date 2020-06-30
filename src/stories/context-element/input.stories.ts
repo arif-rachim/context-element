@@ -2,7 +2,7 @@ import {ContextElement} from "../../context-element";
 import {withKnobs} from "@storybook/addon-knobs";
 import {useJavascript} from "../useJavascript";
 
-export default { title: 'Context Element',decorators:[withKnobs] };
+export default {title: 'Context Element', decorators: [withKnobs]};
 
 export const input = () => {
     const html = `<context-element id="myElement" style="display: flex;flex-direction: column">
@@ -11,19 +11,20 @@ export const input = () => {
                   </context-element>`;
 
     useJavascript(() => {
-        interface Data{
-            name : string
+        interface Data {
+            name: string
         }
+
         const el = document.getElementById('myElement') as ContextElement<Data>;
         el.data = {
-            name : 'This is example of binding'
+            name: 'This is example of binding'
         };
-        el.reducer = (data,action) => {
-            const {event,type} = action;
+        el.reducer = (data, action) => {
+            const {event, type} = action;
             if (type === 'SET_NAME') {
                 {
                     const name = (event.target as HTMLInputElement).value;
-                    return {...data,name}
+                    return {...data, name}
                 }
             }
             return {...data}

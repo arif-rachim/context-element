@@ -1,1 +1,1 @@
-export const useJavascript= (callback:() => void) => requestAnimationFrame(callback);
+export const useJavascript = (callback: () => void) => requestAnimationFrame(callback);

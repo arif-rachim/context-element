@@ -130,7 +130,7 @@ test('It should bind event against node', (done) => {
     });
 });
 
-test('It should update the data when click event triggered',(done) => {
+test('It should update the data when click event triggered', (done) => {
     const arrayContextElement = createArrayContextElement(`
 <div content.watch="name" content.simple.watch="city"></div>
 <button action="SET_SIMPLE" class="simple">Click</button>
@@ -139,7 +139,7 @@ test('It should update the data when click event triggered',(done) => {
     arrayContextElement.setAttribute(DATA_KEY_ATTRIBUTE, 'userId');
     const users = generateRandomUser(3);
     arrayContextElement.data = users;
-    arrayContextElement.reducer = (context,action:ArrayAction<any>) => {
+    arrayContextElement.reducer = (context, action: ArrayAction<any>) => {
         const data = action.data;
         switch (action.type) {
             case 'SET_SIMPLE' : {
@@ -154,9 +154,9 @@ test('It should update the data when click event triggered',(done) => {
         }
         return context;
     };
-    arrayContextElement.onMounted(() =>{
+    arrayContextElement.onMounted(() => {
         expect(arrayContextElement.childNodes.length).toBe(3 * 3);
-        const button:HTMLButtonElement = arrayContextElement.querySelector('button.simple');
+        const button: HTMLButtonElement = arrayContextElement.querySelector('button.simple');
         expect((arrayContextElement.firstChild as HTMLElement).innerHTML).toBe(users[0].name);
         button.click();
         expect((arrayContextElement.firstChild as HTMLElement).innerHTML).toBe(users[0].city);
@@ -164,7 +164,7 @@ test('It should update the data when click event triggered',(done) => {
     })
 });
 
-test('It should toggle when user change the data',(done)=>{
+test('It should toggle when user change the data', (done) => {
     const arrayContextElement = createArrayContextElement(`
         <div class="common" 
         class.one.toggle="one"
@@ -174,7 +174,7 @@ test('It should toggle when user change the data',(done)=>{
         <button click.action="SET_TWO">Toggle TWO</button>
         <button click.action="SET_NONE">Toggle Three</button>
     `);
-    arrayContextElement.reducer = (context,action:ArrayAction<any>) => {
+    arrayContextElement.reducer = (context, action: ArrayAction<any>) => {
         switch (action.type) {
             case 'SET_ONE' : {
                 action.data[STATE_PROPERTY] = 'one';
@@ -212,21 +212,21 @@ test('It should toggle when user change the data',(done)=>{
 
 });
 
-test('it should provide a default array if there is no object assigned to it',(done) => {
+test('it should provide a default array if there is no object assigned to it', (done) => {
     const contextElement = createArrayContextElement(`<div>
     <div watch="nama" content.enabled.watch="enabled" content.disabled.watch="disabled" class="divToWatch"></div>
     <button click.action="TOGGLE_STATE" >Click</button>
 </div>`);
-    contextElement.reducer = (array,action:ArrayAction<any>) => {
+    contextElement.reducer = (array, action: ArrayAction<any>) => {
         const d = action.data;
         d.nama = 'Name';
         d.enabled = 'enabled';
         d.disabled = 'disabled';
         d._state = d._state === 'enabled' ? 'disabled' : 'enabled';
-        return [...array.slice(0,action.index),{...d},...array.slice(action.index+1,array.length)];
+        return [...array.slice(0, action.index), {...d}, ...array.slice(action.index + 1, array.length)];
     };
-    contextElement.setAttribute('data.key','id');
-    contextElement.data = [{id:'1'},{id:'2'}];
+    contextElement.setAttribute('data.key', 'id');
+    contextElement.data = [{id: '1'}, {id: '2'}];
     contextElement.onMounted(() => {
         const myButtons = Array.from(contextElement.getElementsByTagName('button'));
         const divsToWatch = Array.from(contextElement.querySelectorAll('.divToWatch'));
@@ -249,7 +249,7 @@ test('it should provide a default array if there is no object assigned to it',(d
     });
 });
 
-test('It should assign the value from assets',(done)=>{
+test('It should assign the value from assets', (done) => {
     const contextElement = createArrayContextElement(`
 <div>
     <div asset="kambing" class="kambing"></div>
@@ -259,15 +259,15 @@ test('It should assign the value from assets',(done)=>{
     </context-element>
 </div>
     `);
-    contextElement.data = [{id:1},{id:2},{id:3},{id:4}];
-    contextElement.setAttribute('data.key','id');
+    contextElement.data = [{id: 1}, {id: 2}, {id: 3}, {id: 4}];
+    contextElement.setAttribute('data.key', 'id');
     contextElement.assets = {
-        kambing : 'kambing',
-        helloWorld : (data:any,action:any) => {
-            const {type}  = action;
+        kambing: 'kambing',
+        helloWorld: (data: any, action: any) => {
+            const {type} = action;
             if (type === 'SET_CONTENT') {
                 {
-                    return {...data,content:'Hello World'}
+                    return {...data, content: 'Hello World'}
                 }
             }
             return {...data}
@@ -284,13 +284,13 @@ test('It should assign the value from assets',(done)=>{
         contents.forEach(content => {
             expect(content.innerHTML).toBe("undefined");
         });
-        buttons.forEach((button:any) => {
+        buttons.forEach((button: any) => {
             button.click()
         });
         contents.forEach(content => {
             expect(content.innerHTML).toBe("Hello World");
         });
         done();
-    },100);
+    }, 100);
 
 });

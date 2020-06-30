@@ -1,6 +1,12 @@
 import {
+    Action,
     ARRAY_CONTEXT_ELEMENT_TAG_NAME,
+    ArrayAction,
+    ArrayDataGetterValue,
     AssetGetter,
+    BubbleChildAction,
+    CHILD_ACTION_EVENT,
+    ChildAction,
     contains,
     CONTEXT_ELEMENT_TAG_NAME,
     DATA_ACTION_ATTRIBUTE,
@@ -9,7 +15,7 @@ import {
     DATA_WATCH_ATTRIBUTE,
     DataGetter,
     ReducerGetter,
-    UpdateDataCallback, UpdateParentDataCallback,
+    UpdateDataCallback,
 } from "../types";
 import noEmptyTextNode from "./no-empty-text-node";
 import AttributeEvaluator from "./attribute-evaluator";
@@ -28,20 +34,17 @@ import AttributeEvaluator from "./attribute-evaluator";
 export default class DataRenderer<DataSource> {
 
     /**
+     * The actual nodes attached to the dom
+     */
+    public nodes: ChildNode[];
+    /**
      * Callback to get the latest ContextElement.data
      */
     private dataGetter: DataGetter<DataSource>;
-
     /**
      * Collection of AttributeEvaluator.
      */
     private readonly attributeEvaluators: AttributeEvaluator<DataSource>[];
-
-    /**
-     * The actual nodes attached to the dom
-     */
-    public nodes: ChildNode[];
-
 
     /**
      * Constructor to setup the DataRenderer initialization.
@@ -50,13 +53,16 @@ export default class DataRenderer<DataSource> {
      * @param assetGetter
      * @param updateData
      * @param reducerGetter
+     * @param bubbleChildAction
+     * @param updateDataFromChild
      */
-    constructor(nodes: ChildNode[],assetGetter:AssetGetter, updateData: UpdateDataCallback<DataSource>, reducerGetter:ReducerGetter<DataSource>,updateParentData:UpdateParentDataCallback<DataSource>) {
+    constructor(nodes: ChildNode[], assetGetter: AssetGetter, updateData: UpdateDataCallback<DataSource>, reducerGetter: ReducerGetter<DataSource>, bubbleChildAction: BubbleChildAction<DataSource>, updateDataFromChild: (action: ChildAction, currentAction: Action | ArrayAction<any>) => void) {
         this.nodes = nodes;
-        const activeAttributes: (string)[] = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE,DATA_ASSET_ATTRIBUTE];
+        this.addChildActionEventListener(updateDataFromChild);
+        const activeAttributes: (string)[] = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE, DATA_ASSET_ATTRIBUTE];
         const activeNodes: ChildNode[] = Array.from(activeNodesLookup(activeAttributes, nodes));
         const dataGetter = () => this.dataGetter();
-        this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode,assetGetter, dataGetter, updateData, reducerGetter,activeAttributes,updateParentData));
+        this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, assetGetter, dataGetter, updateData, reducerGetter, activeAttributes, bubbleChildAction));
     }
 
     /**
@@ -68,6 +74,28 @@ export default class DataRenderer<DataSource> {
         this.attributeEvaluators.forEach((attributeEvaluator: AttributeEvaluator<DataSource>) => attributeEvaluator.render());
     };
 
+    private addChildActionEventListener(updateDataFromChild: (action: ChildAction, currentAction: Action | ArrayAction<any>) => void) {
+        this.nodes.forEach((node) => {
+            node.addEventListener(CHILD_ACTION_EVENT, (event: CustomEvent) => {
+                if (event.defaultPrevented) {
+                    return;
+                }
+                event.stopImmediatePropagation();
+                event.stopPropagation();
+                event.preventDefault();
+                const childAction: ChildAction = event.detail;
+                const currentData: ArrayDataGetterValue<DataSource> = this.dataGetter() as ArrayDataGetterValue<DataSource>;
+                const currentAction: ArrayAction<any> = {
+                    index: currentData.index,
+                    event: childAction.event,
+                    type: childAction.type,
+                    data: currentData.data,
+                    key: currentData.key
+                };
+                updateDataFromChild(childAction, currentAction);
+            })
+        });
+    }
 }
 
 

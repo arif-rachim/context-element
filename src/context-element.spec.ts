@@ -74,24 +74,24 @@ content.two.watch="picture"></div>
     });
 });
 
-test('It should perform update only against the node leaf',(done) => {
+test('It should perform update only against the node leaf', (done) => {
     const contextElement = createContextElement(`<div watch="name"></div>
         <context-element data.watch="address" reducer.watch="addressReducer" id="subElement">
             <div watch="city" id="cityDiv"></div>
             <input type="text" input.action="SET_CITY" id="input">
         </context-element>`);
     contextElement.data = {
-        name : 'Example of how to change the node',
-        address : {
-            city : 'You can change this value'
+        name: 'Example of how to change the node',
+        address: {
+            city: 'You can change this value'
         },
-        addressReducer : (address:any,action:Action) => {
-            const type:string = action.type;
-            const event:any = action.event;
+        addressReducer: (address: any, action: Action) => {
+            const type: string = action.type;
+            const event: any = action.event;
             if (type === 'SET_CITY') {
                 {
                     const city = event.target.value;
-                    return {...address,city}
+                    return {...address, city}
                 }
             }
             return {...address}
@@ -100,9 +100,9 @@ test('It should perform update only against the node leaf',(done) => {
     contextElement.onMounted(() => {
         const subElement = document.getElementById('subElement') as ContextElement<any>;
         subElement.onMounted(() => {
-            const input:HTMLInputElement = document.getElementById('input') as HTMLInputElement;
+            const input: HTMLInputElement = document.getElementById('input') as HTMLInputElement;
             input.value = 'Jakarta';
-            input.dispatchEvent(new InputEvent('input',{bubbles:true,cancelable:true}));
+            input.dispatchEvent(new InputEvent('input', {bubbles: true, cancelable: true}));
             const cityDiv = document.getElementById('cityDiv');
             expect(cityDiv.innerHTML).toBe('Jakarta');
             done();
@@ -111,7 +111,7 @@ test('It should perform update only against the node leaf',(done) => {
 
 });
 
-test('it should provide a default object if there is no object assigned to it',(done) => {
+test('it should provide a default object if there is no object assigned to it', (done) => {
     const contextElement = createContextElement(`<div>
     <div watch="nama" content.enabled.watch="nama_panjang" content.disabled.watch="nama_pendek" id="divToWatch"></div>
     <button click.action="TOGGLE_STATE" id="myButton">Click</button>
@@ -135,7 +135,7 @@ test('it should provide a default object if there is no object assigned to it',(
     });
 });
 
-test('it should get the assets from the context element',(done) => {
+test('it should get the assets from the context element', (done) => {
     const contextElement = createContextElement(`
         <div watch="hello"></div>
         <context-element>
@@ -146,12 +146,12 @@ test('it should get the assets from the context element',(done) => {
             </div>
         </context-element>
     `);
-    const myReducer = (state:any) => {
+    const myReducer = (state: any) => {
         return {...state}
     };
     contextElement.assets = {
         myReducer,
-        name : 'sedap'
+        name: 'sedap'
     };
     contextElement.onMounted(() => {
         const childContextElement = document.getElementById('child') as ContextElement<any>;
@@ -159,7 +159,7 @@ test('it should get the assets from the context element',(done) => {
         expect(childContextElement.getAsset('myReducer')).toBe(myReducer);
         expect(childContextElement.getAsset('name')).toBe('sedap');
         childContextElement.assets = {
-            name : 'kuncup'
+            name: 'kuncup'
         };
         expect(childContextElement.getAsset('name')).toBe('kuncup');
         done();
@@ -167,7 +167,7 @@ test('it should get the assets from the context element',(done) => {
 
 });
 
-test('It should assign the value from assets',(done)=>{
+test('It should assign the value from assets', (done) => {
     const contextElement = createContextElement(`
 <div>
     <div asset="kambing" id="kambingId"></div>
@@ -178,12 +178,12 @@ test('It should assign the value from assets',(done)=>{
 </div>
     `);
     contextElement.assets = {
-        kambing : 'kambing',
-        helloWorld : (data:any,action:any) => {
-            const {type}  = action;
+        kambing: 'kambing',
+        helloWorld: (data: any, action: any) => {
+            const {type} = action;
             if (type === 'SET_CONTENT') {
                 {
-                    return {...data,content:'Hello World'}
+                    return {...data, content: 'Hello World'}
                 }
             }
             return {...data}
@@ -198,7 +198,7 @@ test('It should assign the value from assets',(done)=>{
         myButton.click();
         expect(contentDiv.innerHTML).toBe('Hello World');
         done();
-    },100);
+    }, 100);
 
 });
 

@@ -110,11 +110,11 @@ export class ArrayContextElement<Context> extends ContextElement<Context[]> {
         let anchorNode: Node = document.createElement('template');
         this.append(anchorNode);
         const dpLength = contextData.length - 1;
-        [...contextData].reverse().forEach((data:Context, index:number) => {
+        [...contextData].reverse().forEach((data: Context, index: number) => {
             const dataKey = this.dataKeyPicker(data);
             if (!renderers.has(dataKey)) {
                 const dataNode: ChildNode[] = template.map(node => node.cloneNode(true)) as ChildNode[];
-                const itemRenderer = new DataRenderer(dataNode,this.getAsset, this.updateDataCallback, () => this.reducer,this.updateParentDataCallback);
+                const itemRenderer = new DataRenderer(dataNode, this.getAsset, this.updateDataCallback, () => this.reducer, this.bubbleChildAction, this.updateDataFromChild);
                 renderers.set(dataKey, itemRenderer);
             }
             const itemRenderer = renderers.get(dataKey);
@@ -125,7 +125,7 @@ export class ArrayContextElement<Context> extends ContextElement<Context[]> {
                 }
                 anchorNode = node;
             }
-            const dataGetter:DataGetter<Context> = () => ({data, key: dataKey, index: (dpLength - index)});
+            const dataGetter: DataGetter<Context> = () => ({data, key: dataKey, index: (dpLength - index)});
             itemRenderer.render(dataGetter);
         });
         this.lastChild.remove();

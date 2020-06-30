@@ -44,5 +44,17 @@ body{
     display: flex;
     align-items: center;
     justify-content: center;
+}
 
+.input-position{
+    z-index: 99;
+    position: absolute;
+    top:1rem;
+    right:1rem;
+    border: none;
+    font-size: 2rem;
+    outline: none;
+    padding : 1rem;
+    width  :280px;
+    text-align: center;
 }

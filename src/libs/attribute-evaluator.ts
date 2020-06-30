@@ -1,7 +1,7 @@
 import {
-    Action, ArrayAction,
     ArrayDataGetterValue,
     AssetGetter,
+    BubbleChildAction,
     composeChangeEventName,
     contains,
     DATA_ACTION_ATTRIBUTE,
@@ -15,7 +15,7 @@ import {
     ReducerGetter,
     STATE_GLOBAL,
     STATE_PROPERTY,
-    UpdateDataCallback, UpdateParentDataCallback
+    UpdateDataCallback
 } from "../types";
 import isValidAttribute from "./attribute-validator";
 import {toggleMissingStateAndProperty} from "./error-message";
@@ -67,7 +67,7 @@ export default class AttributeEvaluator<Context> {
     /**
      * AssetGetter is a callback function to get the asset from the context-element
      */
-    private readonly assetGetter : AssetGetter;
+    private readonly assetGetter: AssetGetter;
 
     /**
      * DataUpdateCallback is a callback to inform DataRenderer that a new copy of data is available.
@@ -75,9 +75,9 @@ export default class AttributeEvaluator<Context> {
     private readonly updateData: UpdateDataCallback<Context>;
 
     /**
-     * Update parent data is a callback to bubble action to the parent.
+     * Bubble child action is a callback to bubble action to the parent data renderer.
      */
-    private readonly updateParentData:UpdateParentDataCallback<Context>;
+    private readonly bubbleChildAction: BubbleChildAction<Context>;
 
     /**
      * callback function that is called when an action is triggered by dom event.
@@ -85,7 +85,7 @@ export default class AttributeEvaluator<Context> {
     private readonly reducerGetter: ReducerGetter<Context>;
 
     // mapping for watch & assets
-    private readonly stateAttributeProperty: Map<string,Map<string, Map<string, string>>> = null;
+    private readonly stateAttributeProperty: Map<string, Map<string, Map<string, string>>> = null;
 
     // mapping for toggle
     private readonly attributeStateProperty: Map<string, Map<string, string>> = null;
@@ -104,21 +104,21 @@ export default class AttributeEvaluator<Context> {
      * @param updateData : callback function to inform DataRenderer that a new data is created because of user action.
      * @param reducerGetter : function to map data into a new one because of user action.
      * @param activeAttributes : attributes that is used to lookup the nodes
+     * @param bubbleChildAction
      */
-    constructor(activeNode: ChildNode,assetGetter:AssetGetter, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducerGetter: ReducerGetter<Context>,activeAttributes:string[],updateParentData:UpdateParentDataCallback<Context>) {
+    constructor(activeNode: ChildNode, assetGetter: AssetGetter, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducerGetter: ReducerGetter<Context>, activeAttributes: string[], bubbleChildAction: BubbleChildAction<Context>) {
         this.activeNode = activeNode;
         this.dataGetter = dataGetter;
         this.assetGetter = assetGetter;
         this.updateData = updateData;
-        this.updateParentData = updateParentData;
+        this.bubbleChildAction = bubbleChildAction;
         this.reducerGetter = reducerGetter;
-        this.activeAttributeValue = populateActiveAttributeValue(activeNode as HTMLElement,activeAttributes);
+        this.activeAttributeValue = populateActiveAttributeValue(activeNode as HTMLElement, activeAttributes);
         this.defaultAttributeValue = populateDefaultAttributeValue(activeNode as HTMLElement);
         this.eventStateAction = mapEventStateAction(this.activeAttributeValue);
-        this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue,[DATA_WATCH_ATTRIBUTE,DATA_ASSET_ATTRIBUTE]);
-        this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue,DATA_TOGGLE_ATTRIBUTE);
-
-        initEventListener(activeNode as HTMLElement, this.eventStateAction, dataGetter, updateData, reducerGetter,updateParentData);
+        this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue, [DATA_WATCH_ATTRIBUTE, DATA_ASSET_ATTRIBUTE]);
+        this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue, DATA_TOGGLE_ATTRIBUTE);
+        initEventListener(activeNode as HTMLElement, this.eventStateAction, dataGetter, updateData, reducerGetter, bubbleChildAction);
     }
 
     /**
@@ -134,7 +134,7 @@ export default class AttributeEvaluator<Context> {
         const dataState = data[STATE_PROPERTY];
         const defaultAttributeValue = this.defaultAttributeValue;
         const assetGetter = this.assetGetter;
-        updateWatchAttribute(element, stateAttributeProperty, data, dataState,assetGetter);
+        updateWatchAttribute(element, stateAttributeProperty, data, dataState, assetGetter);
         updateToggleAttribute(element, attributeStateProperty, dataState, defaultAttributeValue);
     }
 }
@@ -174,8 +174,8 @@ const mapEventStateAction = (attributeValue: Map<string, string>) => {
  * @param attributeValue
  * @param attributePrefixes
  */
-const mapStateAttributeProperty = (attributeValue: Map<string, string>,attributePrefixes:string[]) => {
-    const stateAttributeProperty: Map<string,Map<string, Map<string, string>>> = new Map<string,Map<string, Map<string, string>>>();
+const mapStateAttributeProperty = (attributeValue: Map<string, string>, attributePrefixes: string[]) => {
+    const stateAttributeProperty: Map<string, Map<string, Map<string, string>>> = new Map<string, Map<string, Map<string, string>>>();
     attributeValue.forEach((value, attributeName) => {
         if (attributePrefixes.filter(attributePrefix => attributeName.endsWith(attributePrefix)).length > 0) {
 
@@ -197,13 +197,13 @@ const mapStateAttributeProperty = (attributeValue: Map<string, string>,attribute
                 type = attributes[2];
             }
             if (!stateAttributeProperty.has(state)) {
-                stateAttributeProperty.set(state, new Map<string, Map<string,string>>());
+                stateAttributeProperty.set(state, new Map<string, Map<string, string>>());
             }
             const attributeProperty = stateAttributeProperty.get(state);
-            if(!attributeProperty.has(attribute)){
-                attributeProperty.set(attribute,new Map<string,string>());
+            if (!attributeProperty.has(attribute)) {
+                attributeProperty.set(attribute, new Map<string, string>());
             }
-            attributeProperty.get(attribute).set(type,value);
+            attributeProperty.get(attribute).set(type, value);
         }
     });
     return stateAttributeProperty;
@@ -214,7 +214,7 @@ const mapStateAttributeProperty = (attributeValue: Map<string, string>,attribute
  * @param attributeValue
  * @param attributePrefix
  */
-const mapAttributeStateProperty = (attributeValue: Map<string, string>,attributePrefix:string) => {
+const mapAttributeStateProperty = (attributeValue: Map<string, string>, attributePrefix: string) => {
     const attributeStateProperty: Map<string, Map<string, string>> = new Map<string, Map<string, string>>();
     attributeValue.forEach((value, attributeName) => {
         if (attributeName.endsWith(attributePrefix)) {
@@ -241,7 +241,7 @@ const mapAttributeStateProperty = (attributeValue: Map<string, string>,attribute
  * @param element
  * @param activeAttributes
  */
-const populateActiveAttributeValue = (element: HTMLElement,activeAttributes:string[]) => {
+const populateActiveAttributeValue = (element: HTMLElement, activeAttributes: string[]) => {
     const attributeValue: Map<string, string> = new Map<string, string>();
     element.getAttributeNames().filter(name => contains(name, activeAttributes)).forEach(attributeName => {
         attributeValue.set(attributeName, element.getAttribute(attributeName));
@@ -271,31 +271,32 @@ const populateActiveAttributeValue = (element: HTMLElement,activeAttributes:stri
  * @param dataGetter
  * @param updateData
  * @param reducerGetter
+ * @param bubbleChildAction
  */
-const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducerGetter:ReducerGetter<Context>,updateParentData:UpdateParentDataCallback<Context>) => {
+const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducerGetter: ReducerGetter<Context>, bubbleChildAction: BubbleChildAction<Context>) => {
     eventStateAction.forEach((stateAction: Map<string, string>, event: string) => {
 
         event = event.startsWith('on') ? event.substring('on'.length, event.length) : event;
         element.addEventListener(event, (event: Event) => {
             event.preventDefault();
             event.stopImmediatePropagation();
-            const dataGetterValue: DataGetterValue<any>|ArrayDataGetterValue<any> = dataGetter();
+            const dataGetterValue: DataGetterValue<any> | ArrayDataGetterValue<any> = dataGetter();
             let dataState = dataGetterValue.data[STATE_PROPERTY];
             if (stateAction.has(dataState) || stateAction.has(STATE_GLOBAL)) {
                 updateData((oldData) => {
                     const reducer = reducerGetter();
                     const type = stateAction.get(dataState) || stateAction.get(STATE_GLOBAL);
                     let data = dataGetterValue.data;
-                    const action:any = {type,event};
-                    if('key' in dataGetterValue){
+                    const action: any = {type, event};
+                    if ('key' in dataGetterValue) {
                         const arrayDataGetterValue = dataGetterValue as ArrayDataGetterValue<any>;
                         data = arrayDataGetterValue.data;
                         action.data = data;
                         action.key = arrayDataGetterValue.key;
                         action.index = arrayDataGetterValue.index;
                     }
-                    if(hasNoValue(reducer)){
-                        updateParentData(action);
+                    if (hasNoValue(reducer)) {
+                        bubbleChildAction(action);
                         return oldData;
                     }
                     return reducer(oldData, action);
@@ -316,12 +317,13 @@ const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<
  * @param property
  */
 function setPropertyValue(attribute: string, element: any, val: any, data: any, property: string) {
-    if (isValidAttribute(attribute)) {
+
+    if (isValidAttribute(attribute) && element.getAttribute(attribute) !== val) {
         element.setAttribute(attribute, val);
     }
     if (attribute in element) {
         element[attribute] = val;
-        if(attribute === 'data'){
+        if (attribute === 'data') {
             element.dataPath = property;
         }
         const eventName = composeChangeEventName(attribute);
@@ -350,18 +352,18 @@ function setPropertyValue(attribute: string, element: any, val: any, data: any, 
  * @param dataState : state value of the object.
  * @param assetGetter : callback to get the asset of the context element.
  */
-const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, Map<string, Map<string,string>>>, data:any, dataState: string,assetGetter:AssetGetter) => {
+const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, Map<string, Map<string, string>>>, data: any, dataState: string, assetGetter: AssetGetter) => {
     const attributeProps = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
     if (hasNoValue(attributeProps)) {
         return;
     }
-    attributeProps.forEach((typeProperty: Map<string,string>, attribute: string) => {
+    attributeProps.forEach((typeProperty: Map<string, string>, attribute: string) => {
         const watchProperty = typeProperty.get(DATA_WATCH_ATTRIBUTE);
         const assetProperty = typeProperty.get(DATA_ASSET_ATTRIBUTE);
         let val = null;
-        if(hasValue(watchProperty)){
+        if (hasValue(watchProperty)) {
             val = extractValue(data, watchProperty);
-        }else if(hasValue(assetProperty)){
+        } else if (hasValue(assetProperty)) {
             val = assetGetter(assetProperty);
         }
         setPropertyValue(attribute, element, val, data, watchProperty);

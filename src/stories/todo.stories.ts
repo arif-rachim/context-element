@@ -3,13 +3,12 @@ import {withKnobs} from "@storybook/addon-knobs";
 import {useJavascript} from "./useJavascript";
 import uuid from "../libs/uuid";
 
-export default { title: 'Todo App',decorators:[withKnobs] };
+export default {title: 'Todo App', decorators: [withKnobs]};
 
 export const todo = () => {
     useJavascript(javascript);
     return useHtml();
 };
-
 
 
 const useHtml = () => `
@@ -64,34 +63,33 @@ const useHtml = () => `
 `;
 
 
-
-const todoItemReducer = (array:any,action:any) => {
-    const {data,type,event,index} = action;
+const todoItemReducer = (array: any, action: any) => {
+    const {data, type, event, index} = action;
 
     switch (type) {
         case 'SET_DONE' : {
             const isDone = (event.target as HTMLInputElement).checked;
-            const newData = {...data,isDone,_state:isDone?'done' : ''};
-            return [...array.slice(0,index),newData,...array.slice(index+1,array.length)];
+            const newData = {...data, isDone, _state: isDone ? 'done' : ''};
+            return [...array.slice(0, index), newData, ...array.slice(index + 1, array.length)];
         }
         case 'DELETE_TODO' : {
-            return [...array.filter((item:any,itemIndex:number) => index !== itemIndex)];
+            return [...array.filter((item: any, itemIndex: number) => index !== itemIndex)];
         }
     }
     return [...array]
 };
 
-const mainReducer = (data:any,action:any) => {
-    const {type,event} = action;
+const mainReducer = (data: any, action: any) => {
+    const {type, event} = action;
     switch (type) {
         case 'SET_TODO' : {
-            const newTodo = {...data.todo,todo:event.target.value};
-            return {...data,todo:newTodo}
+            const newTodo = {...data.todo, todo: event.target.value};
+            return {...data, todo: newTodo}
         }
         case 'ADD_TODO' : {
             const todo = data.todo;
-            const newTodo = {id:uuid(),todo:'',done:false};
-            return {...data,todo:newTodo,todos:[...data.todos,todo]}
+            const newTodo = {id: uuid(), todo: '', done: false};
+            return {...data, todo: newTodo, todos: [...data.todos, todo]}
         }
     }
     return {...data};
@@ -100,12 +98,12 @@ const mainReducer = (data:any,action:any) => {
 const javascript = () => {
     const app = document.getElementById('app') as ContextElement<any>;
     let DEFAULT_CONTEXT = {
-        todo : {
+        todo: {
             id: uuid(),
-            todo : '',
-            done : false
+            todo: '',
+            done: false
         },
-        todos : Array.from([]),
+        todos: Array.from([]),
         todoItemReducer
     };
     app.data = DEFAULT_CONTEXT;
