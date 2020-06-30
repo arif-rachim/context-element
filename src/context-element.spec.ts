@@ -9,6 +9,7 @@ import {Action} from "./types";
  * @param innerHTML
  */
 const createContextElement = (innerHTML?: string) => {
+    document.body.innerHTML = '';
     const randomId = uuid();
     const element = document.createElement('context-element');
     element.innerHTML = innerHTML;
@@ -202,3 +203,42 @@ test('It should assign the value from assets', (done) => {
 
 });
 
+test(`It should bubble the action child`,(done) => {
+    const ce = createContextElement(`<div>
+    <context-element data.watch="person">
+        <context-element data.watch="address">
+            <button click.action="SET_NAME" id="buttonContext">Hello</button>
+            <div watch="city" id="city"></div>
+        </context-element>
+    </context-element>
+</div>`);
+    ce.data =  {
+        person : {
+            address : {
+                city : 'DUBAI'
+            }
+        }
+    };
+
+    ce.reducer = (data,action) => {
+        return {
+            person : {
+                address : {
+                    city : 'TOKYO'
+                }
+            }
+        };
+    };
+
+    setTimeout(() => {
+        const button = document.getElementById('buttonContext');
+        const cityDiv = document.getElementById('city');
+        expect(cityDiv.innerHTML).toBe('DUBAI');
+        button.click();
+        setTimeout(() => {
+            expect(cityDiv.innerHTML).toBe('TOKYO');
+            done();
+        },100);
+    },100);
+
+});

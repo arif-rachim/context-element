@@ -21,7 +21,7 @@ export interface ChildAction extends Action {
     childActions: ActionPath[];
 }
 
-export type Reducer<T> = (data: T, action: Action | ArrayAction<T>) => T;
+export type Reducer<T> = (data: T, action: Action | ArrayAction<T> | ChildAction) => T;
 export type ReducerGetter<T> = () => Reducer<T>;
 export type Renderer = { render: (dataGetter: () => any) => void, nodes: ChildNode[] };
 export type DataSetter<T> = (oldData: T) => T;

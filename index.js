@@ -15,6 +15,7 @@
     const HIDE_CLASS = "data-element-hidden";
     const ARRAY_CONTEXT_ELEMENT_TAG_NAME = 'context-array';
     const CONTEXT_ELEMENT_TAG_NAME = 'context-element';
+    const CHILD_ACTION_EVENT = 'childAction';
     const style = document.createElement('style');
     style.innerHTML = `.${HIDE_CLASS} {display: none !important;}`;
     document.head.appendChild(style);
@@ -80,10 +81,11 @@
          * @param assetGetter : callback function to get the asset from context-data
          * @param dataGetter : callback function to return current data.
          * @param updateData : callback function to inform DataRenderer that a new data is created because of user action.
-         * @param reducer : function to map data into a new one because of user action.
+         * @param reducerGetter : function to map data into a new one because of user action.
          * @param activeAttributes : attributes that is used to lookup the nodes
+         * @param bubbleChildAction
          */
-        constructor(activeNode, assetGetter, dataGetter, updateData, reducer, activeAttributes) {
+        constructor(activeNode, assetGetter, dataGetter, updateData, reducerGetter, activeAttributes, bubbleChildAction) {
             // mapping for watch & assets
             this.stateAttributeProperty = null;
             // mapping for toggle
@@ -110,13 +112,14 @@
             this.dataGetter = dataGetter;
             this.assetGetter = assetGetter;
             this.updateData = updateData;
-            this.reducer = reducer;
+            this.bubbleChildAction = bubbleChildAction;
+            this.reducerGetter = reducerGetter;
             this.activeAttributeValue = populateActiveAttributeValue(activeNode, activeAttributes);
             this.defaultAttributeValue = populateDefaultAttributeValue(activeNode);
             this.eventStateAction = mapEventStateAction(this.activeAttributeValue);
             this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue, [DATA_WATCH_ATTRIBUTE, DATA_ASSET_ATTRIBUTE]);
             this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue, DATA_TOGGLE_ATTRIBUTE);
-            initEventListener(activeNode, this.eventStateAction, dataGetter, updateData, reducer);
+            initEventListener(activeNode, this.eventStateAction, dataGetter, updateData, reducerGetter, bubbleChildAction);
         }
     }
     /**
@@ -250,37 +253,35 @@
      * @param eventStateAction
      * @param dataGetter
      * @param updateData
-     * @param reducer
+     * @param reducerGetter
+     * @param bubbleChildAction
      */
-    const initEventListener = (element, eventStateAction, dataGetter, updateData, reducer) => {
+    const initEventListener = (element, eventStateAction, dataGetter, updateData, reducerGetter, bubbleChildAction) => {
         eventStateAction.forEach((stateAction, event) => {
             event = event.startsWith('on') ? event.substring('on'.length, event.length) : event;
             element.addEventListener(event, (event) => {
-                if (event.type === 'submit') {
-                    event.preventDefault();
-                    event.stopImmediatePropagation();
-                    event.stopPropagation();
-                }
+                event.preventDefault();
+                event.stopImmediatePropagation();
                 const dataGetterValue = dataGetter();
                 let dataState = dataGetterValue.data[STATE_PROPERTY];
                 if (stateAction.has(dataState) || stateAction.has(STATE_GLOBAL)) {
-                    updateData((oldData) => {
-                        const type = stateAction.get(dataState) || stateAction.get(STATE_GLOBAL);
-                        let data = dataGetterValue.data;
-                        if ('key' in dataGetterValue) {
-                            const arrayDataGetterValue = dataGetterValue;
-                            data = arrayDataGetterValue.data;
-                            debugger;
-                            return reducer()(oldData, {
-                                type,
-                                event,
-                                data,
-                                key: arrayDataGetterValue.key,
-                                index: arrayDataGetterValue.index
-                            });
-                        }
-                        return reducer()(oldData, { type, event });
-                    });
+                    const reducer = reducerGetter();
+                    const type = stateAction.get(dataState) || stateAction.get(STATE_GLOBAL);
+                    let data = dataGetterValue.data;
+                    const action = { type, event };
+                    if ('key' in dataGetterValue) {
+                        const arrayDataGetterValue = dataGetterValue;
+                        data = arrayDataGetterValue.data;
+                        action.data = data;
+                        action.key = arrayDataGetterValue.key;
+                        action.index = arrayDataGetterValue.index;
+                    }
+                    if (hasNoValue(reducer)) {
+                        bubbleChildAction(action);
+                    }
+                    else {
+                        updateData((oldData) => reducer(oldData, action));
+                    }
                 }
             });
         });
@@ -296,11 +297,14 @@
      * @param property
      */
     function setPropertyValue(attribute, element, val, data, property) {
-        if (isValidAttribute(attribute)) {
+        if (isValidAttribute(attribute) && element.getAttribute(attribute) !== val) {
             element.setAttribute(attribute, val);
         }
         if (attribute in element) {
             element[attribute] = val;
+            if (attribute === 'data') {
+                element.dataPath = property;
+            }
             const eventName = composeChangeEventName(attribute);
             element[eventName] = (val) => injectValue(data, property, val);
         }
@@ -438,9 +442,11 @@
          * @param nodes is a cloned of ContextElement.template
          * @param assetGetter
          * @param updateData
-         * @param reducer
+         * @param reducerGetter
+         * @param bubbleChildAction
+         * @param updateDataFromChild
          */
-        constructor(nodes, assetGetter, updateData, reducer) {
+        constructor(nodes, assetGetter, updateData, reducerGetter, bubbleChildAction, updateDataFromChild) {
             /**
              * Render with iterate all the AttributeEvaluators and call the AttributeEvaluator.render
              * @param getter
@@ -450,13 +456,33 @@
                 this.attributeEvaluators.forEach((attributeEvaluator) => attributeEvaluator.render());
             };
             this.nodes = nodes;
-            this.assetGetter = assetGetter;
-            this.updateData = updateData;
-            this.reducer = reducer;
+            this.addChildActionEventListener(updateDataFromChild);
             const activeAttributes = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE, DATA_ASSET_ATTRIBUTE];
-            const activeNodes = Array.from(activeNodesLookup(activeAttributes, this.nodes));
+            const activeNodes = Array.from(activeNodesLookup(activeAttributes, nodes));
             const dataGetter = () => this.dataGetter();
-            this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, assetGetter, dataGetter, this.updateData, this.reducer, activeAttributes));
+            this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, assetGetter, dataGetter, updateData, reducerGetter, activeAttributes, bubbleChildAction));
+        }
+        addChildActionEventListener(updateDataFromChild) {
+            this.nodes.forEach((node) => {
+                node.addEventListener(CHILD_ACTION_EVENT, (event) => {
+                    if (event.defaultPrevented) {
+                        return;
+                    }
+                    event.stopImmediatePropagation();
+                    event.stopPropagation();
+                    event.preventDefault();
+                    const childAction = event.detail;
+                    const currentData = this.dataGetter();
+                    const currentAction = {
+                        index: currentData.index,
+                        event: childAction.event,
+                        type: childAction.type,
+                        data: currentData.data,
+                        key: currentData.key
+                    };
+                    updateDataFromChild(childAction, currentAction);
+                });
+            });
         }
     }
     /**
@@ -548,6 +574,34 @@
                 this.onMountedCallback = onMountedListener;
             };
             /**
+             * Get the assets from the current assets or the parent context element assets.
+             * @param key
+             */
+            this.getAsset = (key) => {
+                const assets = this.assets;
+                if (hasValue(assets) && key in assets) {
+                    return assets[key];
+                }
+                const superContextElement = this.superContextElement;
+                if (hasValue(superContextElement)) {
+                    return superContextElement.getAsset(key);
+                }
+                return null;
+            };
+            /**
+             * Convert action to ActionPath
+             * @param arrayAction
+             */
+            this.actionToPath = (arrayAction) => {
+                const actionPath = { path: this.dataPath };
+                if (hasValue(arrayAction.key)) {
+                    actionPath.key = arrayAction.key;
+                    actionPath.index = arrayAction.index;
+                    actionPath.data = arrayAction.data;
+                }
+                return actionPath;
+            };
+            /**
              * updateDataCallback is a callback function that will set the data and call `dataChanged` method.
              * <pre>
              *     <code>
@@ -561,6 +615,35 @@
                 const dataChangedEvent = composeChangeEventName('data');
                 if (dataChangedEvent in this) {
                     this[dataChangedEvent].call(this, this.contextData);
+                }
+            };
+            /**
+             * To bubble child action to the parent.
+             * @param action
+             */
+            this.bubbleChildAction = (action) => {
+                const childAction = {
+                    event: action.event,
+                    type: action.type,
+                    childActions: [this.actionToPath(action)]
+                };
+                this.dispatchDetailEvent(childAction);
+            };
+            /**
+             * Updating current data from child action
+             * @param action
+             * @param currentAction
+             */
+            this.updateDataFromChild = (action, currentAction) => {
+                const reducer = this.reducer;
+                if (hasNoValue(reducer)) {
+                    action.childActions = [this.actionToPath(currentAction), ...action.childActions];
+                    this.dispatchDetailEvent(action);
+                }
+                else {
+                    this.updateDataCallback((oldData) => {
+                        return reducer(oldData, action);
+                    });
                 }
             };
             /**
@@ -582,7 +665,7 @@
                 }
                 if (hasNoValue(this.renderer)) {
                     const dataNodes = this.template.map(node => node.cloneNode(true));
-                    this.renderer = new DataRenderer(dataNodes, this.getAsset, this.updateDataCallback, () => this.reducer);
+                    this.renderer = new DataRenderer(dataNodes, this.getAsset, this.updateDataCallback, () => this.reducer, this.bubbleChildAction, this.updateDataFromChild);
                 }
                 const reversedNodes = [...this.renderer.nodes].reverse();
                 let anchorNode = document.createElement('template');
@@ -604,27 +687,20 @@
             this.initAttribute = () => {
             };
             /**
+             * Dispatch child action event.
+             * @param childAction
+             */
+            this.dispatchDetailEvent = (childAction) => {
+                const event = new CustomEvent(CHILD_ACTION_EVENT, { detail: childAction, cancelable: true, bubbles: true });
+                this.dispatchEvent(event);
+            };
+            /**
              * Populate the ContextElement template by storing the node child-nodes into template property.
              * Once the child nodes is stored in template property, ContextElement will clear its content by calling this.innerHTML = ''
              */
             this.populateTemplate = () => {
                 this.template = Array.from(this.childNodes).filter(noEmptyTextNode());
                 this.innerHTML = ''; // we cleanup the innerHTML
-            };
-            /**
-             * Get the assets from the current assets or the parent context element assets.
-             * @param key
-             */
-            this.getAsset = (key) => {
-                const assets = this.assets;
-                if (hasValue(assets) && key in assets) {
-                    return assets[key];
-                }
-                const superContextElement = this.superContextElement;
-                if (hasValue(superContextElement)) {
-                    return superContextElement.getAsset(key);
-                }
-                return null;
             };
             /**
              * Get the super context element, this function will lookup to the parentNode which is instanceof ContextElement,
@@ -681,7 +757,8 @@
                         this.onMountedCallback = null;
                     }
                 };
-                requestAnimationFrame(requestAnimationFrameCallback);
+                //requestAnimationFrame(requestAnimationFrameCallback);
+                setTimeout(requestAnimationFrameCallback, 0);
             }
         }
         // noinspection JSUnusedGlobalSymbols
@@ -762,7 +839,7 @@
                     const dataKey = this.dataKeyPicker(data);
                     if (!renderers.has(dataKey)) {
                         const dataNode = template.map(node => node.cloneNode(true));
-                        const itemRenderer = new DataRenderer(dataNode, this.getAsset, this.updateDataCallback, () => this.reducer);
+                        const itemRenderer = new DataRenderer(dataNode, this.getAsset, this.updateDataCallback, () => this.reducer, this.bubbleChildAction, this.updateDataFromChild);
                         renderers.set(dataKey, itemRenderer);
                     }
                     const itemRenderer = renderers.get(dataKey);

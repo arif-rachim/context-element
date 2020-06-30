@@ -205,14 +205,15 @@ export class ContextElement<Context> extends HTMLElement {
      */
     protected updateDataFromChild = (action: ChildAction, currentAction: ArrayAction<any>) => {
         const reducer = this.reducer;
-        this.updateDataCallback((oldData: Context) => {
-            if (hasNoValue(reducer)) {
-                action.childActions = [this.actionToPath(currentAction), ...action.childActions];
-                this.dispatchDetailEvent(action);
-                return oldData;
-            }
-            return reducer(oldData, action);
-        });
+        if (hasNoValue(reducer)) {
+            action.childActions = [this.actionToPath(currentAction), ...action.childActions];
+            this.dispatchDetailEvent(action);
+        }else{
+            this.updateDataCallback((oldData: Context) => {
+                return reducer(oldData, action);
+            });
+        }
+
     };
 
     /**
@@ -245,7 +246,6 @@ export class ContextElement<Context> extends HTMLElement {
             }
             anchorNode = node;
         }
-
         const data = this.contextData;
         const dataGetter: DataGetter<Context> = () => ({data});
         this.renderer.render(dataGetter);

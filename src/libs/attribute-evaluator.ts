@@ -283,24 +283,22 @@ const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<
             const dataGetterValue: DataGetterValue<any> | ArrayDataGetterValue<any> = dataGetter();
             let dataState = dataGetterValue.data[STATE_PROPERTY];
             if (stateAction.has(dataState) || stateAction.has(STATE_GLOBAL)) {
-                updateData((oldData) => {
-                    const reducer = reducerGetter();
-                    const type = stateAction.get(dataState) || stateAction.get(STATE_GLOBAL);
-                    let data = dataGetterValue.data;
-                    const action: any = {type, event};
-                    if ('key' in dataGetterValue) {
-                        const arrayDataGetterValue = dataGetterValue as ArrayDataGetterValue<any>;
-                        data = arrayDataGetterValue.data;
-                        action.data = data;
-                        action.key = arrayDataGetterValue.key;
-                        action.index = arrayDataGetterValue.index;
-                    }
-                    if (hasNoValue(reducer)) {
-                        bubbleChildAction(action);
-                        return oldData;
-                    }
-                    return reducer(oldData, action);
-                });
+                const reducer = reducerGetter();
+                const type = stateAction.get(dataState) || stateAction.get(STATE_GLOBAL);
+                let data = dataGetterValue.data;
+                const action: any = {type, event};
+                if ('key' in dataGetterValue) {
+                    const arrayDataGetterValue = dataGetterValue as ArrayDataGetterValue<any>;
+                    data = arrayDataGetterValue.data;
+                    action.data = data;
+                    action.key = arrayDataGetterValue.key;
+                    action.index = arrayDataGetterValue.index;
+                }
+                if (hasNoValue(reducer)) {
+                    bubbleChildAction(action);
+                }else{
+                    updateData((oldData) => reducer(oldData, action));
+                }
             }
         })
     });

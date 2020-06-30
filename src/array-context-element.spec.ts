@@ -2,9 +2,10 @@ import {ArrayContextElement} from './array-context-element';
 import './index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
-import {ArrayAction, DATA_KEY_ATTRIBUTE, STATE_PROPERTY} from "./types";
+import {ArrayAction, ChildAction, DATA_KEY_ATTRIBUTE, STATE_PROPERTY} from "./types";
 
 const createArrayContextElement = (innerHTML?: string) => {
+    document.body.innerHTML = '';
     const randomId = uuid();
     const element = document.createElement('context-array');
     element.innerHTML = innerHTML;
@@ -292,5 +293,47 @@ test('It should assign the value from assets', (done) => {
         });
         done();
     }, 100);
+
+});
+
+test(`Context Array should bubble the action child`,(done) => {
+    const ce = createArrayContextElement(`<div>
+    <context-array data.watch="persons" data.key="id">
+        <context-array data.watch="addresses" data.key="id">
+            <button click.action="SET_NAME" id="buttonContext">Hello</button>
+            <div watch="city" id="city"></div>
+        </context-array>
+    </context-array>
+</div>`);
+    ce.setDataKeyPicker((data) => data.id);
+    ce.data =  [{
+        id : 'dictionary',
+        persons : [
+            {
+                id: 'person',
+                addresses : [{
+                    id : 'dubai',
+                    city : 'DUBAI'
+                }]
+            }
+        ]
+    }];
+
+    ce.reducer = (data,action) => {
+        const [firstPath,secondPath] = (action as ChildAction).childActions;
+        secondPath.data.city = 'TOKYO';
+        return [...data];
+    };
+
+    setTimeout(() => {
+        const button = document.getElementById('buttonContext');
+        const cityDiv = document.getElementById('city');
+        expect(cityDiv.innerHTML).toBe('DUBAI');
+        button.click();
+        setTimeout(() => {
+            expect(cityDiv.innerHTML).toBe('TOKYO');
+            done();
+        },100);
+    },100);
 
 });
