@@ -1,4 +1,5 @@
 import {
+    Action, ArrayAction,
     ArrayDataGetterValue,
     AssetGetter,
     composeChangeEventName,
@@ -14,7 +15,7 @@ import {
     ReducerGetter,
     STATE_GLOBAL,
     STATE_PROPERTY,
-    UpdateDataCallback
+    UpdateDataCallback, UpdateParentDataCallback
 } from "../types";
 import isValidAttribute from "./attribute-validator";
 import {toggleMissingStateAndProperty} from "./error-message";
@@ -74,9 +75,14 @@ export default class AttributeEvaluator<Context> {
     private readonly updateData: UpdateDataCallback<Context>;
 
     /**
+     * Update parent data is a callback to bubble action to the parent.
+     */
+    private readonly updateParentData:UpdateParentDataCallback<Context>;
+
+    /**
      * callback function that is called when an action is triggered by dom event.
      */
-    private readonly reducer: ReducerGetter<Context>;
+    private readonly reducerGetter: ReducerGetter<Context>;
 
     // mapping for watch & assets
     private readonly stateAttributeProperty: Map<string,Map<string, Map<string, string>>> = null;
@@ -96,22 +102,23 @@ export default class AttributeEvaluator<Context> {
      * @param assetGetter : callback function to get the asset from context-data
      * @param dataGetter : callback function to return current data.
      * @param updateData : callback function to inform DataRenderer that a new data is created because of user action.
-     * @param reducer : function to map data into a new one because of user action.
+     * @param reducerGetter : function to map data into a new one because of user action.
      * @param activeAttributes : attributes that is used to lookup the nodes
      */
-    constructor(activeNode: ChildNode,assetGetter:AssetGetter, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducer: ReducerGetter<Context>,activeAttributes:string[]) {
+    constructor(activeNode: ChildNode,assetGetter:AssetGetter, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducerGetter: ReducerGetter<Context>,activeAttributes:string[],updateParentData:UpdateParentDataCallback<Context>) {
         this.activeNode = activeNode;
         this.dataGetter = dataGetter;
         this.assetGetter = assetGetter;
         this.updateData = updateData;
-        this.reducer = reducer;
+        this.updateParentData = updateParentData;
+        this.reducerGetter = reducerGetter;
         this.activeAttributeValue = populateActiveAttributeValue(activeNode as HTMLElement,activeAttributes);
         this.defaultAttributeValue = populateDefaultAttributeValue(activeNode as HTMLElement);
         this.eventStateAction = mapEventStateAction(this.activeAttributeValue);
         this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue,[DATA_WATCH_ATTRIBUTE,DATA_ASSET_ATTRIBUTE]);
         this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue,DATA_TOGGLE_ATTRIBUTE);
 
-        initEventListener(activeNode as HTMLElement, this.eventStateAction, dataGetter, updateData, reducer);
+        initEventListener(activeNode as HTMLElement, this.eventStateAction, dataGetter, updateData, reducerGetter,updateParentData);
     }
 
     /**
@@ -263,38 +270,35 @@ const populateActiveAttributeValue = (element: HTMLElement,activeAttributes:stri
  * @param eventStateAction
  * @param dataGetter
  * @param updateData
- * @param reducer
+ * @param reducerGetter
  */
-const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducer:ReducerGetter<Context>) => {
+const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducerGetter:ReducerGetter<Context>,updateParentData:UpdateParentDataCallback<Context>) => {
     eventStateAction.forEach((stateAction: Map<string, string>, event: string) => {
 
         event = event.startsWith('on') ? event.substring('on'.length, event.length) : event;
         element.addEventListener(event, (event: Event) => {
-            if (event.type === 'submit') {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                event.stopPropagation();
-            }
+            event.preventDefault();
+            event.stopImmediatePropagation();
             const dataGetterValue: DataGetterValue<any>|ArrayDataGetterValue<any> = dataGetter();
             let dataState = dataGetterValue.data[STATE_PROPERTY];
             if (stateAction.has(dataState) || stateAction.has(STATE_GLOBAL)) {
                 updateData((oldData) => {
-
+                    const reducer = reducerGetter();
                     const type = stateAction.get(dataState) || stateAction.get(STATE_GLOBAL);
                     let data = dataGetterValue.data;
+                    const action:any = {type,event};
                     if('key' in dataGetterValue){
                         const arrayDataGetterValue = dataGetterValue as ArrayDataGetterValue<any>;
                         data = arrayDataGetterValue.data;
-                        debugger;
-                        return reducer()(oldData, {
-                            type,
-                            event,
-                            data,
-                            key: arrayDataGetterValue.key,
-                            index: arrayDataGetterValue.index
-                        });
+                        action.data = data;
+                        action.key = arrayDataGetterValue.key;
+                        action.index = arrayDataGetterValue.index;
                     }
-                    return reducer()(oldData, {type,event});
+                    if(hasNoValue(reducer)){
+                        updateParentData(action);
+                        return oldData;
+                    }
+                    return reducer(oldData, action);
                 });
             }
         })
@@ -317,6 +321,9 @@ function setPropertyValue(attribute: string, element: any, val: any, data: any, 
     }
     if (attribute in element) {
         element[attribute] = val;
+        if(attribute === 'data'){
+            element.dataPath = property;
+        }
         const eventName = composeChangeEventName(attribute);
         element[eventName] = (val: any) => injectValue(data, property, val);
     }

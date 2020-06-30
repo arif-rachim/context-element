@@ -9,7 +9,7 @@ import {
     DATA_WATCH_ATTRIBUTE,
     DataGetter,
     ReducerGetter,
-    UpdateDataCallback,
+    UpdateDataCallback, UpdateParentDataCallback,
 } from "../types";
 import noEmptyTextNode from "./no-empty-text-node";
 import AttributeEvaluator from "./attribute-evaluator";
@@ -28,21 +28,6 @@ import AttributeEvaluator from "./attribute-evaluator";
 export default class DataRenderer<DataSource> {
 
     /**
-     * Real node (copy of ContextElement.template) that is attached to the document.body
-     */
-    public readonly nodes: ChildNode[];
-
-    /**
-     * ContextElement.updateDataCallback, this callback is to inform ContextElement to update the dataSource.
-     */
-    private readonly updateData: UpdateDataCallback<DataSource>;
-
-    /**
-     * Callback that responsible to convert oldData into a newData based on the user action.
-     */
-    private readonly reducer:ReducerGetter<DataSource>;
-
-    /**
      * Callback to get the latest ContextElement.data
      */
     private dataGetter: DataGetter<DataSource>;
@@ -53,9 +38,10 @@ export default class DataRenderer<DataSource> {
     private readonly attributeEvaluators: AttributeEvaluator<DataSource>[];
 
     /**
-     * Callback function to get the asset from context-element
+     * The actual nodes attached to the dom
      */
-    private readonly assetGetter:AssetGetter;
+    public nodes: ChildNode[];
+
 
     /**
      * Constructor to setup the DataRenderer initialization.
@@ -63,17 +49,14 @@ export default class DataRenderer<DataSource> {
      * @param nodes is a cloned of ContextElement.template
      * @param assetGetter
      * @param updateData
-     * @param reducer
+     * @param reducerGetter
      */
-    constructor(nodes: ChildNode[],assetGetter:AssetGetter, updateData: UpdateDataCallback<DataSource>, reducer:ReducerGetter<DataSource>) {
+    constructor(nodes: ChildNode[],assetGetter:AssetGetter, updateData: UpdateDataCallback<DataSource>, reducerGetter:ReducerGetter<DataSource>,updateParentData:UpdateParentDataCallback<DataSource>) {
         this.nodes = nodes;
-        this.assetGetter = assetGetter;
-        this.updateData = updateData;
-        this.reducer = reducer;
         const activeAttributes: (string)[] = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE,DATA_ASSET_ATTRIBUTE];
-        const activeNodes: ChildNode[] = Array.from(activeNodesLookup(activeAttributes, this.nodes));
+        const activeNodes: ChildNode[] = Array.from(activeNodesLookup(activeAttributes, nodes));
         const dataGetter = () => this.dataGetter();
-        this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode,assetGetter, dataGetter, this.updateData, this.reducer,activeAttributes));
+        this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode,assetGetter, dataGetter, updateData, reducerGetter,activeAttributes,updateParentData));
     }
 
     /**

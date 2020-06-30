@@ -29,7 +29,6 @@ export const input = () => {
         }]);
 
         el.reducer = (array,action:ArrayAction<Data>) => {
-            debugger;
             let {type,event,index,data} = action;
             if (type === 'SET_FAVORITE') {
                 {

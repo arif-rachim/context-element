@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Color Palete</title>
+    <link rel="stylesheet" href="index.css">
+    <script src="../../src/index.ts"></script>
+</head>
+<body>
+<div class="container">
+    <context-element id="palate">
+        <context-array data.watch="palateOne" data.key="id" class="palates-container">
+            <context-array data.watch="palateTwo" data.key="id" class="context-array" style.watch="scale">
+                <div class="dot" style.watch="style">
+                    <div class="box-container">
+                        <div class="box" style.watch="colorStyle" onmouseenter.action="SET_COLOR"></div>
+                    </div>
+                </div>
+            </context-array>
+        </context-array>
+    </context-element>
+</div>
+<script src="index.js"></script>
+</body>
+</html>

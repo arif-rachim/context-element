@@ -1,0 +1,48 @@
+body{
+    margin: 0px;
+    padding: 0px;
+}
+.container{
+    display: flex;
+    width: 100vw;
+    height : 100vh;
+    align-items: center;
+    justify-content: center;
+}
+.box{
+    background-color: rgba(0,0,0,0);
+    display: inline-block;
+    border: 10rem solid rgba(0,0,0,0);
+    border-bottom:77rem solid rgba(255,0,0,1);
+    transform: rotate(0deg);
+    transform-origin: top;
+}
+.box-container{
+    margin-top: -10rem;
+}
+.dot{
+    width: 2px;
+    height: 2px;
+    display: flex;
+    justify-content: center;
+    transform: rotate(10deg);
+    position: absolute;
+}
+.context-array{
+    width: 40rem;
+    height: 40rem;
+    border-radius: 40rem;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+
+}
+.palates-container{
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}

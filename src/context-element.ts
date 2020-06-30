@@ -1,4 +1,13 @@
-import {composeChangeEventName, DataGetter, DataSetter, hasNoValue, hasValue, HIDE_CLASS, Reducer} from "./types";
+import {
+    Action, ArrayAction, ArrayDataGetterValue, ChildAction,
+    composeChangeEventName,
+    DataGetter,
+    DataSetter,
+    hasNoValue,
+    hasValue,
+    HIDE_CLASS,
+    Reducer, STATE_GLOBAL
+} from "./types";
 import noEmptyTextNode from "./libs/no-empty-text-node";
 import DataRenderer from "./libs/data-renderer";
 
@@ -33,6 +42,7 @@ export class ContextElement<Context> extends HTMLElement {
     protected contextData: Context;
     protected onMountedCallback: () => void;
     private superContextElement:ContextElement<any>;
+    public dataPath:string;
 
     /**
      * Constructor sets default value of reducer to return the parameter immediately (param) => param.
@@ -104,13 +114,15 @@ export class ContextElement<Context> extends HTMLElement {
             const requestAnimationFrameCallback = () => {
                 this.populateTemplate();
                 this.classList.remove(HIDE_CLASS);
+
                 this.render();
                 if (hasValue(this.onMountedCallback)) {
                     this.onMountedCallback();
                     this.onMountedCallback = null;
                 }
             };
-            requestAnimationFrame(requestAnimationFrameCallback);
+            //requestAnimationFrame(requestAnimationFrameCallback);
+            setTimeout(requestAnimationFrameCallback,0);
         }
     }
 
@@ -139,6 +151,31 @@ export class ContextElement<Context> extends HTMLElement {
         }
     };
 
+    protected updateParentDataCallback = (action:ArrayAction<any>|Action) => {
+        const arrayAction =  (action as ArrayAction<any>);
+        const childAction:ChildAction = {
+            event : action.event,
+            path:this.dataPath,
+            type:action.type,
+            index : arrayAction.index,
+            key : arrayAction.key,
+            data : arrayAction.data
+        };
+        this.superContextElement?.updateDataFromChild(childAction);
+    };
+
+    protected updateDataFromChild = (action:ChildAction) => {
+        const reducer = this.reducer;
+        this.updateDataCallback((oldData:Context) => {
+            if(hasNoValue(reducer)){
+                action.path = `${this.dataPath}.${action.path}`;
+                this.superContextElement?.updateDataFromChild(action);
+                return oldData;
+            }
+            return reducer(oldData, action);
+        });
+    };
+
     /**
      * render method is invoked by the component when it received a new data-update.
      * First it will create DataRenderer object if its not exist.
@@ -158,7 +195,7 @@ export class ContextElement<Context> extends HTMLElement {
         }
         if (hasNoValue(this.renderer)) {
             const dataNodes: ChildNode[] = this.template.map(node => node.cloneNode(true)) as ChildNode[];
-            this.renderer = new DataRenderer(dataNodes,this.getAsset, this.updateDataCallback,() => this.reducer);
+            this.renderer = new DataRenderer(dataNodes,this.getAsset, this.updateDataCallback,() => this.reducer,this.updateParentDataCallback);
         }
         const reversedNodes: Node[] = [...this.renderer.nodes].reverse();
         let anchorNode: Node = document.createElement('template');
@@ -222,4 +259,5 @@ export class ContextElement<Context> extends HTMLElement {
         }
         return null;
     };
+
 }

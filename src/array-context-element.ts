@@ -101,9 +101,11 @@ export class ArrayContextElement<Context> extends ContextElement<Context[]> {
         const contextData: Context[] = this.contextData;
         const template: ChildNode[] = this.template;
         const renderers: Map<string, Renderer> = this.renderers;
+
         if (hasNoValue(contextData) || hasNoValue(template)) {
             return;
         }
+
         this.removeExpiredData();
         let anchorNode: Node = document.createElement('template');
         this.append(anchorNode);
@@ -112,7 +114,7 @@ export class ArrayContextElement<Context> extends ContextElement<Context[]> {
             const dataKey = this.dataKeyPicker(data);
             if (!renderers.has(dataKey)) {
                 const dataNode: ChildNode[] = template.map(node => node.cloneNode(true)) as ChildNode[];
-                const itemRenderer = new DataRenderer(dataNode,this.getAsset, this.updateDataCallback, () => this.reducer);
+                const itemRenderer = new DataRenderer(dataNode,this.getAsset, this.updateDataCallback, () => this.reducer,this.updateParentDataCallback);
                 renderers.set(dataKey, itemRenderer);
             }
             const itemRenderer = renderers.get(dataKey);
