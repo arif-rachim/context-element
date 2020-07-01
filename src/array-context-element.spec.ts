@@ -2,7 +2,7 @@ import {ArrayContextElement} from './array-context-element';
 import './index';
 import * as faker from 'faker';
 import uuid from "./libs/uuid";
-import {ArrayAction, ChildAction, DATA_KEY_ATTRIBUTE, STATE_PROPERTY} from "./types";
+import {ChildAction, DATA_KEY_ATTRIBUTE} from "./types";
 
 const createArrayContextElement = (innerHTML?: string) => {
     document.body.innerHTML = '';
@@ -68,56 +68,6 @@ test('It should perform remove', (done) => {
     });
 });
 
-test('it should render `watch` according to the state', (done) => {
-    const arrayContextElement = createArrayContextElement(`<div content.watch="fullName" 
-                                                      content.state-one.watch="firstName"
-                                                      content.state-two.watch="lastName"></div>`);
-    arrayContextElement.setDataKeyPicker((data) => data.userId);
-    const dataProvider = Array.from({length: 20}).map(() => {
-        const firstName = faker.name.firstName();
-        const lastName = faker.name.lastName();
-        return {
-            userId: uuid(),
-            fullName: `${firstName} ${lastName}`,
-            firstName: firstName,
-            lastName: lastName
-        }
-    });
-    arrayContextElement.setData(() => {
-        return dataProvider;
-    });
-    arrayContextElement.onMounted(() => {
-        const contentOnDefaultState = Array.from(arrayContextElement.childNodes).map(node => (node as HTMLElement).innerHTML);
-        const usersFullName = dataProvider.map(data => data.fullName);
-        expect(contentOnDefaultState).toEqual(usersFullName);
-        arrayContextElement.setData((old) => {
-            return old.map(data => ({...data, [STATE_PROPERTY]: 'state-one'}));
-        });
-        const contentOnStateOne = Array.from(arrayContextElement.childNodes).map(node => (node as HTMLElement).innerHTML);
-        expect(contentOnStateOne).toEqual(dataProvider.map(data => data.firstName));
-        arrayContextElement.setData((old) => {
-            return old.map(data => ({...data, [STATE_PROPERTY]: 'state-two'}));
-        });
-        const contentOnStateTwo = Array.from(arrayContextElement.childNodes).map(node => (node as HTMLElement).innerHTML);
-        expect(contentOnStateTwo).toEqual(dataProvider.map(data => data.lastName));
-        arrayContextElement.setData((old) => {
-            return old.map(data => ({...data, [STATE_PROPERTY]: 'state-three'}));
-        });
-        const contentOnStateThree = Array.from(arrayContextElement.childNodes).map(node => (node as HTMLElement).innerHTML);
-        expect(contentOnStateThree).toEqual(dataProvider.map(data => data.fullName));
-
-        arrayContextElement.setData((old) => {
-            return old.map(data => {
-                const newData = ({...data});
-                delete newData[STATE_PROPERTY];
-                return data;
-            });
-        });
-        const contentOnStateNone = Array.from(arrayContextElement.childNodes).map(node => (node as HTMLElement).innerHTML);
-        expect(contentOnStateNone).toEqual(dataProvider.map(data => data.fullName));
-        done();
-    });
-});
 
 test('It should bind event against node', (done) => {
     const arrayContextElement = createArrayContextElement('<input click.action="INPUT_CLICKED" >');
@@ -131,124 +81,6 @@ test('It should bind event against node', (done) => {
     });
 });
 
-test('It should update the data when click event triggered', (done) => {
-    const arrayContextElement = createArrayContextElement(`
-<div content.watch="name" content.simple.watch="city"></div>
-<button action="SET_SIMPLE" class="simple">Click</button>
-<button action="SET_COMPLETE" class="complete">Click</button>
-`);
-    arrayContextElement.setAttribute(DATA_KEY_ATTRIBUTE, 'userId');
-    const users = generateRandomUser(3);
-    arrayContextElement.data = users;
-    arrayContextElement.reducer = (context, action: ArrayAction<any>) => {
-        const data = action.data;
-        switch (action.type) {
-            case 'SET_SIMPLE' : {
-                data[STATE_PROPERTY] = 'simple';
-                return [...context];
-
-            }
-            case 'SET_COMPLETE' : {
-                data[STATE_PROPERTY] = 'complete';
-                return [...context];
-            }
-        }
-        return context;
-    };
-    arrayContextElement.onMounted(() => {
-        expect(arrayContextElement.childNodes.length).toBe(3 * 3);
-        const button: HTMLButtonElement = arrayContextElement.querySelector('button.simple');
-        expect((arrayContextElement.firstChild as HTMLElement).innerHTML).toBe(users[0].name);
-        button.click();
-        expect((arrayContextElement.firstChild as HTMLElement).innerHTML).toBe(users[0].city);
-        done();
-    })
-});
-
-test('It should toggle when user change the data', (done) => {
-    const arrayContextElement = createArrayContextElement(`
-        <div class="common" 
-        class.one.toggle="one"
-        class.two.toggle="two"
-        >my data</div>
-        <button click.action="SET_ONE">Toggle ONE</button>
-        <button click.action="SET_TWO">Toggle TWO</button>
-        <button click.action="SET_NONE">Toggle Three</button>
-    `);
-    arrayContextElement.reducer = (context, action: ArrayAction<any>) => {
-        switch (action.type) {
-            case 'SET_ONE' : {
-                action.data[STATE_PROPERTY] = 'one';
-                break;
-            }
-            case 'SET_TWO' : {
-                action.data[STATE_PROPERTY] = 'two';
-                break;
-            }
-            case 'SET_NONE' : {
-                delete action.data[STATE_PROPERTY];
-                break;
-            }
-        }
-        return context;
-    };
-
-    arrayContextElement.setAttribute(DATA_KEY_ATTRIBUTE, 'userId');
-    arrayContextElement.data = generateRandomUser(5);
-    arrayContextElement.onMounted(() => {
-        expect(arrayContextElement.childNodes.length).toBe(20);
-        const firstElement = arrayContextElement.firstChild as HTMLDivElement;
-        expect(firstElement.getAttribute('class')).toBe('common');
-        const setOne = arrayContextElement.childNodes.item(1) as HTMLButtonElement;
-        const setTwo = arrayContextElement.childNodes.item(2) as HTMLButtonElement;
-        const setThree = arrayContextElement.childNodes.item(3) as HTMLButtonElement;
-        setOne.click();
-        expect(firstElement.getAttribute('class')).toBe('common one');
-        setTwo.click();
-        expect(firstElement.getAttribute('class')).toBe('common two');
-        setThree.click();
-        expect(firstElement.getAttribute('class')).toBe('common');
-        done();
-    });
-
-});
-
-test('it should provide a default array if there is no object assigned to it', (done) => {
-    const contextElement = createArrayContextElement(`<div>
-    <div watch="nama" content.enabled.watch="enabled" content.disabled.watch="disabled" class="divToWatch"></div>
-    <button click.action="TOGGLE_STATE" >Click</button>
-</div>`);
-    contextElement.reducer = (array, action: ArrayAction<any>) => {
-        const d = action.data;
-        d.nama = 'Name';
-        d.enabled = 'enabled';
-        d.disabled = 'disabled';
-        d._state = d._state === 'enabled' ? 'disabled' : 'enabled';
-        return [...array.slice(0, action.index), {...d}, ...array.slice(action.index + 1, array.length)];
-    };
-    contextElement.setAttribute('data.key', 'id');
-    contextElement.data = [{id: '1'}, {id: '2'}];
-    contextElement.onMounted(() => {
-        const myButtons = Array.from(contextElement.getElementsByTagName('button'));
-        const divsToWatch = Array.from(contextElement.querySelectorAll('.divToWatch'));
-        expect(divsToWatch.length).toBe(contextElement.data.length);
-        // first click
-        myButtons.forEach(b => b.click());
-
-        divsToWatch.forEach((div) => {
-            expect(div.innerHTML).toBe('enabled');
-        });
-
-
-        // second click
-        myButtons.forEach(b => b.click());
-        divsToWatch.forEach((div) => {
-            expect(div.innerHTML).toBe('disabled');
-        });
-        expect(divsToWatch.length).toBe(contextElement.data.length);
-        done();
-    });
-});
 
 test('It should assign the value from assets', (done) => {
     const contextElement = createArrayContextElement(`

@@ -6,19 +6,15 @@ import {
     contains,
     DATA_ACTION_ATTRIBUTE,
     DATA_ASSET_ATTRIBUTE,
-    DATA_TOGGLE_ATTRIBUTE,
     DATA_WATCH_ATTRIBUTE,
     DataGetter,
     DataGetterValue,
     hasNoValue,
     hasValue,
     ReducerGetter,
-    STATE_GLOBAL,
-    STATE_PROPERTY,
     UpdateDataCallback
 } from "../types";
 import isValidAttribute from "./attribute-validator";
-import {toggleMissingStateAndProperty} from "./error-message";
 
 
 /**
@@ -55,11 +51,6 @@ export default class AttributeEvaluator<Context> {
     private readonly activeAttributeValue: Map<string, string>;
 
     /**
-     * default-attribute, is a map of node attribute which does not have  `watch|toggle|action` and its value
-     */
-    private readonly defaultAttributeValue: Map<string, string>;
-
-    /**
      * DataGetter is a callback function to get the current actual data.
      */
     private readonly dataGetter: DataGetter<Context>;
@@ -85,13 +76,11 @@ export default class AttributeEvaluator<Context> {
     private readonly reducerGetter: ReducerGetter<Context>;
 
     // mapping for watch & assets
-    private readonly stateAttributeProperty: Map<string, Map<string, Map<string, string>>> = null;
+    private readonly attributeProperty: Map<string, Map<string, string>> = null;
 
-    // mapping for toggle
-    private readonly attributeStateProperty: Map<string, Map<string, string>> = null;
 
     // mapping for action
-    private readonly eventStateAction: Map<string, Map<string, string>> = null;
+    private readonly eventAction: Map<string, string> = null;
 
     /**
      * Constructor will perform initialization by constructing activeAttributeValue, defaultAttributeValue, eventStateAction,
@@ -114,11 +103,9 @@ export default class AttributeEvaluator<Context> {
         this.bubbleChildAction = bubbleChildAction;
         this.reducerGetter = reducerGetter;
         this.activeAttributeValue = populateActiveAttributeValue(activeNode as HTMLElement, activeAttributes);
-        this.defaultAttributeValue = populateDefaultAttributeValue(activeNode as HTMLElement);
-        this.eventStateAction = mapEventStateAction(this.activeAttributeValue);
-        this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue, [DATA_WATCH_ATTRIBUTE, DATA_ASSET_ATTRIBUTE]);
-        this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue, DATA_TOGGLE_ATTRIBUTE);
-        initEventListener(activeNode as HTMLElement, this.eventStateAction, dataGetter, updateData, reducerGetter, bubbleChildAction);
+        this.eventAction = mapEventStateAction(this.activeAttributeValue);
+        this.attributeProperty = mapAttributeProperty(this.activeAttributeValue, [DATA_WATCH_ATTRIBUTE, DATA_ASSET_ATTRIBUTE]);
+        initEventListener(activeNode as HTMLElement, this.eventAction, dataGetter, updateData, reducerGetter, bubbleChildAction);
     }
 
     /**
@@ -127,15 +114,11 @@ export default class AttributeEvaluator<Context> {
      */
     public render = () => {
         const element = this.activeNode as any;
-        const stateAttributeProperty = this.stateAttributeProperty;
-        const attributeStateProperty = this.attributeStateProperty;
+        const stateAttributeProperty = this.attributeProperty;
         const dataGetterValue = this.dataGetter();
         const data: any = dataGetterValue.data;
-        const dataState = data[STATE_PROPERTY];
-        const defaultAttributeValue = this.defaultAttributeValue;
         const assetGetter = this.assetGetter;
-        updateWatchAttribute(element, stateAttributeProperty, data, dataState, assetGetter);
-        updateToggleAttribute(element, attributeStateProperty, dataState, defaultAttributeValue);
+        updateWatchAttribute(element, stateAttributeProperty, data,assetGetter);
     }
 }
 
@@ -144,26 +127,17 @@ export default class AttributeEvaluator<Context> {
  * @param attributeValue is an active attribute
  */
 const mapEventStateAction = (attributeValue: Map<string, string>) => {
-    const eventStateAction: Map<string, Map<string, string>> = new Map<string, Map<string, string>>();
+    const eventStateAction: Map<string, string> = new Map<string, string>();
     attributeValue.forEach((value, attributeName) => {
         if (attributeName.endsWith(DATA_ACTION_ATTRIBUTE)) {
             const attributes = attributeName.split('.');
             let event = '';
-            let state = '';
             if (attributes.length === 1) {
                 event = 'click';
-                state = STATE_GLOBAL;
-            } else if (attributes.length === 2) {
+            }else{
                 event = attributes[0];
-                state = STATE_GLOBAL;
-            } else if (attributes.length > 2) {
-                event = attributes[0];
-                state = attributes[1];
             }
-            if (!eventStateAction.has(event)) {
-                eventStateAction.set(event, new Map<string, string>());
-            }
-            eventStateAction.get(event).set(state, value);
+            eventStateAction.set(event, value);
         }
     });
     return eventStateAction;
@@ -174,67 +148,29 @@ const mapEventStateAction = (attributeValue: Map<string, string>) => {
  * @param attributeValue
  * @param attributePrefixes
  */
-const mapStateAttributeProperty = (attributeValue: Map<string, string>, attributePrefixes: string[]) => {
-    const stateAttributeProperty: Map<string, Map<string, Map<string, string>>> = new Map<string, Map<string, Map<string, string>>>();
+const mapAttributeProperty = (attributeValue: Map<string, string>, attributePrefixes: string[]) => {
+    const attributeProperty: Map<string, Map<string, string>> = new Map<string, Map<string, string>>();
     attributeValue.forEach((value, attributeName) => {
         if (attributePrefixes.filter(attributePrefix => attributeName.endsWith(attributePrefix)).length > 0) {
-
             const attributes = attributeName.split('.');
             let attribute = '';
-            let state = '';
             let type = '';
             if (attributes.length === 1) {
                 attribute = 'content';
-                state = STATE_GLOBAL;
                 type = attributes[0];
-            } else if (attributes.length === 2) {
+            }else{
                 attribute = attributes[0];
-                state = STATE_GLOBAL;
-                type = attributes[1];
-            } else if (attributes.length > 2) {
-                attribute = attributes[0];
-                state = attributes[1];
-                type = attributes[2];
+                type = attributes[1]
             }
-            if (!stateAttributeProperty.has(state)) {
-                stateAttributeProperty.set(state, new Map<string, Map<string, string>>());
-            }
-            const attributeProperty = stateAttributeProperty.get(state);
             if (!attributeProperty.has(attribute)) {
                 attributeProperty.set(attribute, new Map<string, string>());
             }
             attributeProperty.get(attribute).set(type, value);
         }
     });
-    return stateAttributeProperty;
+    return attributeProperty;
 };
 
-/**
- * mapAttributeStateProperty is a function to convert `toggle` active-attribute to property group by first attribute, then state.
- * @param attributeValue
- * @param attributePrefix
- */
-const mapAttributeStateProperty = (attributeValue: Map<string, string>, attributePrefix: string) => {
-    const attributeStateProperty: Map<string, Map<string, string>> = new Map<string, Map<string, string>>();
-    attributeValue.forEach((value, attributeName) => {
-        if (attributeName.endsWith(attributePrefix)) {
-            const attributes = attributeName.split('.');
-            let attribute = '';
-            let state = '';
-            if (attributes.length === 3) {
-                attribute = attributes[0];
-                state = attributes[1];
-                if (!attributeStateProperty.has(attribute)) {
-                    attributeStateProperty.set(attribute, new Map<string, string>());
-                }
-                attributeStateProperty.get(attribute).set(state, value);
-            } else {
-                throw new Error(toggleMissingStateAndProperty())
-            }
-        }
-    });
-    return attributeStateProperty;
-};
 
 /**
  * populateActiveAttributeValue will extract the active-attributes from the element.
@@ -273,33 +209,31 @@ const populateActiveAttributeValue = (element: HTMLElement, activeAttributes: st
  * @param reducerGetter
  * @param bubbleChildAction
  */
-const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<string, Map<string, string>>, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducerGetter: ReducerGetter<Context>, bubbleChildAction: BubbleChildAction<Context>) => {
-    eventStateAction.forEach((stateAction: Map<string, string>, event: string) => {
-
+const initEventListener = <Context>(element: HTMLElement, eventStateAction: Map<string, string>, dataGetter: DataGetter<Context>, updateData: UpdateDataCallback<Context>, reducerGetter: ReducerGetter<Context>, bubbleChildAction: BubbleChildAction<Context>) => {
+    eventStateAction.forEach((stateAction: string, event: string) => {
         event = event.startsWith('on') ? event.substring('on'.length, event.length) : event;
         element.addEventListener(event, (event: Event) => {
             event.preventDefault();
             event.stopImmediatePropagation();
             const dataGetterValue: DataGetterValue<any> | ArrayDataGetterValue<any> = dataGetter();
-            let dataState = dataGetterValue.data[STATE_PROPERTY];
-            if (stateAction.has(dataState) || stateAction.has(STATE_GLOBAL)) {
-                const reducer = reducerGetter();
-                const type = stateAction.get(dataState) || stateAction.get(STATE_GLOBAL);
-                let data = dataGetterValue.data;
-                const action: any = {type, event};
-                if ('key' in dataGetterValue) {
-                    const arrayDataGetterValue = dataGetterValue as ArrayDataGetterValue<any>;
-                    data = arrayDataGetterValue.data;
-                    action.data = data;
-                    action.key = arrayDataGetterValue.key;
-                    action.index = arrayDataGetterValue.index;
-                }
-                if (hasNoValue(reducer)) {
-                    bubbleChildAction(action);
-                }else{
-                    updateData((oldData) => reducer(oldData, action));
-                }
+            const reducer = reducerGetter();
+            const type = stateAction;
+            let data = dataGetterValue.data;
+            const action: any = {type, event};
+
+            if ('key' in dataGetterValue) {
+                const arrayDataGetterValue = dataGetterValue as ArrayDataGetterValue<any>;
+                data = arrayDataGetterValue.data;
+                action.data = data;
+                action.key = arrayDataGetterValue.key;
+                action.index = arrayDataGetterValue.index;
             }
+            if (hasNoValue(reducer)) {
+                bubbleChildAction(action);
+            }else{
+                updateData((oldData) => reducer(oldData, action));
+            }
+
         })
     });
 };
@@ -350,8 +284,9 @@ function setPropertyValue(attribute: string, element: any, val: any, data: any, 
  * @param dataState : state value of the object.
  * @param assetGetter : callback to get the asset of the context element.
  */
-const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, Map<string, Map<string, string>>>, data: any, dataState: string, assetGetter: AssetGetter) => {
-    const attributeProps = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
+const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, Map<string, string>>, data: any, assetGetter: AssetGetter) => {
+
+    const attributeProps = stateAttributeProperty;
     if (hasNoValue(attributeProps)) {
         return;
     }
@@ -368,48 +303,6 @@ const updateWatchAttribute = (element: any, stateAttributeProperty: Map<string, 
     });
 };
 
-/**
- * UpdateToggleAttribute is a method that will toggle the value of attribute based on the data.state. It will iterate over
- * attributeStateProperty. If the current data.state is available in the attributeStateProperty, then the value of the attribute
- * will be appended against the default attribute value.
- *
- * @param element : node or also an HTMLElement
- * @param attributeStateProperty : object that store the mapping of property against attribute and state.
- * @param dataState : state value of the object.
- * @param defaultAttributeValue : default value of the active-attribute toggle.
- */
-const updateToggleAttribute = (element: HTMLElement, attributeStateProperty: Map<string, Map<string, string>>, dataState: any, defaultAttributeValue: Map<string, string>) => {
-    attributeStateProperty.forEach((stateProperty: Map<string, string>, attribute: string) => {
-        const attributeValue: string[] = [];
-
-        const defaultValue = defaultAttributeValue.get(attribute);
-        const propertyValue = stateProperty.get(dataState);
-
-        if (hasValue(defaultValue)) {
-            attributeValue.push(defaultValue);
-        }
-        if (hasValue(propertyValue)) {
-            attributeValue.push(propertyValue);
-        }
-        const newAttributeValue = attributeValue.join(' ');
-        if (element.getAttribute(attribute) !== newAttributeValue) {
-            element.setAttribute(attribute, newAttributeValue);
-        }
-    });
-};
-
-
-/**
- * PopulateDefaultAttributeValue will iterate over all element attributeNames, and return them in the form of Map.
- * @param element : active node or the HTMLElement
- */
-function populateDefaultAttributeValue(element: HTMLElement) {
-    const attributeValue: Map<string, string> = new Map<string, string>();
-    element.getAttributeNames().forEach(attributeName => {
-        attributeValue.set(attributeName, element.getAttribute(attributeName));
-    });
-    return attributeValue;
-}
 
 /**
  * Function to extract the value of json from jsonPath

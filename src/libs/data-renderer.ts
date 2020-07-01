@@ -11,7 +11,6 @@ import {
     CONTEXT_ELEMENT_TAG_NAME,
     DATA_ACTION_ATTRIBUTE,
     DATA_ASSET_ATTRIBUTE,
-    DATA_TOGGLE_ATTRIBUTE,
     DATA_WATCH_ATTRIBUTE,
     DataGetter,
     ReducerGetter,
@@ -59,7 +58,7 @@ export default class DataRenderer<DataSource> {
     constructor(nodes: ChildNode[], assetGetter: AssetGetter, updateData: UpdateDataCallback<DataSource>, reducerGetter: ReducerGetter<DataSource>, bubbleChildAction: BubbleChildAction<DataSource>, updateDataFromChild: (action: ChildAction, currentAction: Action | ArrayAction<any>) => void) {
         this.nodes = nodes;
         this.addChildActionEventListener(updateDataFromChild);
-        const activeAttributes: (string)[] = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE, DATA_ASSET_ATTRIBUTE];
+        const activeAttributes: (string)[] = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_ASSET_ATTRIBUTE];
         const activeNodes: ChildNode[] = Array.from(activeNodesLookup(activeAttributes, nodes));
         const dataGetter = () => this.dataGetter();
         this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, assetGetter, dataGetter, updateData, reducerGetter, activeAttributes, bubbleChildAction));

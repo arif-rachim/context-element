@@ -7,10 +7,7 @@
     const contains = (text, texts) => texts.reduce((acc, txt) => acc || text.indexOf(txt) >= 0, false);
     const DATA_WATCH_ATTRIBUTE = 'watch';
     const DATA_ACTION_ATTRIBUTE = 'action';
-    const DATA_TOGGLE_ATTRIBUTE = 'toggle';
     const DATA_ASSET_ATTRIBUTE = 'asset';
-    const STATE_PROPERTY = '_state';
-    const STATE_GLOBAL = '*';
     const DATA_KEY_ATTRIBUTE = 'data.key';
     const HIDE_CLASS = "data-element-hidden";
     const ARRAY_CONTEXT_ELEMENT_TAG_NAME = 'context-array';
@@ -40,15 +37,6 @@
     function isValidAttribute(attributeName) {
         return ignoredAttributes.indexOf(attributeName) < 0;
     }
-
-    /**
-     * Error message to show when data.key is missing in context-array
-     */
-    const arrayContextElementMissingDataKey = () => `'<context-array>' requires 'data.key' attribute. data-key value should refer to the unique attribute of the data.`;
-    /**
-     * Error message when toggle active-attributes does not have attribute and state
-     */
-    const toggleMissingStateAndProperty = () => `toggle require 3 parameters separated with dot(.) : ' eg <div class="my-div" class.disabled.toggle="disabledCss"></div>`;
 
     /**
      * AttributeEvaluator is a class that stores information about node that have active-attributes.
@@ -87,26 +75,20 @@
          */
         constructor(activeNode, assetGetter, dataGetter, updateData, reducerGetter, activeAttributes, bubbleChildAction) {
             // mapping for watch & assets
-            this.stateAttributeProperty = null;
-            // mapping for toggle
-            this.attributeStateProperty = null;
+            this.attributeProperty = null;
             // mapping for action
-            this.eventStateAction = null;
+            this.eventAction = null;
             /**
              * Render method will be invoked my DataRenderer.render. Render method will perform 2 major things,
              * update active-attribute `watch:updateAttributeWatch`  and `toggle:updateToggleAttribute`.
              */
             this.render = () => {
                 const element = this.activeNode;
-                const stateAttributeProperty = this.stateAttributeProperty;
-                const attributeStateProperty = this.attributeStateProperty;
+                const stateAttributeProperty = this.attributeProperty;
                 const dataGetterValue = this.dataGetter();
                 const data = dataGetterValue.data;
-                const dataState = data[STATE_PROPERTY];
-                const defaultAttributeValue = this.defaultAttributeValue;
                 const assetGetter = this.assetGetter;
-                updateWatchAttribute(element, stateAttributeProperty, data, dataState, assetGetter);
-                updateToggleAttribute(element, attributeStateProperty, dataState, defaultAttributeValue);
+                updateWatchAttribute(element, stateAttributeProperty, data, assetGetter);
             };
             this.activeNode = activeNode;
             this.dataGetter = dataGetter;
@@ -115,11 +97,9 @@
             this.bubbleChildAction = bubbleChildAction;
             this.reducerGetter = reducerGetter;
             this.activeAttributeValue = populateActiveAttributeValue(activeNode, activeAttributes);
-            this.defaultAttributeValue = populateDefaultAttributeValue(activeNode);
-            this.eventStateAction = mapEventStateAction(this.activeAttributeValue);
-            this.stateAttributeProperty = mapStateAttributeProperty(this.activeAttributeValue, [DATA_WATCH_ATTRIBUTE, DATA_ASSET_ATTRIBUTE]);
-            this.attributeStateProperty = mapAttributeStateProperty(this.activeAttributeValue, DATA_TOGGLE_ATTRIBUTE);
-            initEventListener(activeNode, this.eventStateAction, dataGetter, updateData, reducerGetter, bubbleChildAction);
+            this.eventAction = mapEventStateAction(this.activeAttributeValue);
+            this.attributeProperty = mapAttributeProperty(this.activeAttributeValue, [DATA_WATCH_ATTRIBUTE, DATA_ASSET_ATTRIBUTE]);
+            initEventListener(activeNode, this.eventAction, dataGetter, updateData, reducerGetter, bubbleChildAction);
         }
     }
     /**
@@ -132,23 +112,13 @@
             if (attributeName.endsWith(DATA_ACTION_ATTRIBUTE)) {
                 const attributes = attributeName.split('.');
                 let event = '';
-                let state = '';
                 if (attributes.length === 1) {
                     event = 'click';
-                    state = STATE_GLOBAL;
                 }
-                else if (attributes.length === 2) {
+                else {
                     event = attributes[0];
-                    state = STATE_GLOBAL;
                 }
-                else if (attributes.length > 2) {
-                    event = attributes[0];
-                    state = attributes[1];
-                }
-                if (!eventStateAction.has(event)) {
-                    eventStateAction.set(event, new Map());
-                }
-                eventStateAction.get(event).set(state, value);
+                eventStateAction.set(event, value);
             }
         });
         return eventStateAction;
@@ -158,67 +128,28 @@
      * @param attributeValue
      * @param attributePrefixes
      */
-    const mapStateAttributeProperty = (attributeValue, attributePrefixes) => {
-        const stateAttributeProperty = new Map();
+    const mapAttributeProperty = (attributeValue, attributePrefixes) => {
+        const attributeProperty = new Map();
         attributeValue.forEach((value, attributeName) => {
             if (attributePrefixes.filter(attributePrefix => attributeName.endsWith(attributePrefix)).length > 0) {
                 const attributes = attributeName.split('.');
                 let attribute = '';
-                let state = '';
                 let type = '';
                 if (attributes.length === 1) {
                     attribute = 'content';
-                    state = STATE_GLOBAL;
                     type = attributes[0];
                 }
-                else if (attributes.length === 2) {
+                else {
                     attribute = attributes[0];
-                    state = STATE_GLOBAL;
                     type = attributes[1];
                 }
-                else if (attributes.length > 2) {
-                    attribute = attributes[0];
-                    state = attributes[1];
-                    type = attributes[2];
-                }
-                if (!stateAttributeProperty.has(state)) {
-                    stateAttributeProperty.set(state, new Map());
-                }
-                const attributeProperty = stateAttributeProperty.get(state);
                 if (!attributeProperty.has(attribute)) {
                     attributeProperty.set(attribute, new Map());
                 }
                 attributeProperty.get(attribute).set(type, value);
             }
         });
-        return stateAttributeProperty;
-    };
-    /**
-     * mapAttributeStateProperty is a function to convert `toggle` active-attribute to property group by first attribute, then state.
-     * @param attributeValue
-     * @param attributePrefix
-     */
-    const mapAttributeStateProperty = (attributeValue, attributePrefix) => {
-        const attributeStateProperty = new Map();
-        attributeValue.forEach((value, attributeName) => {
-            if (attributeName.endsWith(attributePrefix)) {
-                const attributes = attributeName.split('.');
-                let attribute = '';
-                let state = '';
-                if (attributes.length === 3) {
-                    attribute = attributes[0];
-                    state = attributes[1];
-                    if (!attributeStateProperty.has(attribute)) {
-                        attributeStateProperty.set(attribute, new Map());
-                    }
-                    attributeStateProperty.get(attribute).set(state, value);
-                }
-                else {
-                    throw new Error(toggleMissingStateAndProperty());
-                }
-            }
-        });
-        return attributeStateProperty;
+        return attributeProperty;
     };
     /**
      * populateActiveAttributeValue will extract the active-attributes from the element.
@@ -263,25 +194,22 @@
                 event.preventDefault();
                 event.stopImmediatePropagation();
                 const dataGetterValue = dataGetter();
-                let dataState = dataGetterValue.data[STATE_PROPERTY];
-                if (stateAction.has(dataState) || stateAction.has(STATE_GLOBAL)) {
-                    const reducer = reducerGetter();
-                    const type = stateAction.get(dataState) || stateAction.get(STATE_GLOBAL);
-                    let data = dataGetterValue.data;
-                    const action = { type, event };
-                    if ('key' in dataGetterValue) {
-                        const arrayDataGetterValue = dataGetterValue;
-                        data = arrayDataGetterValue.data;
-                        action.data = data;
-                        action.key = arrayDataGetterValue.key;
-                        action.index = arrayDataGetterValue.index;
-                    }
-                    if (hasNoValue(reducer)) {
-                        bubbleChildAction(action);
-                    }
-                    else {
-                        updateData((oldData) => reducer(oldData, action));
-                    }
+                const reducer = reducerGetter();
+                const type = stateAction;
+                let data = dataGetterValue.data;
+                const action = { type, event };
+                if ('key' in dataGetterValue) {
+                    const arrayDataGetterValue = dataGetterValue;
+                    data = arrayDataGetterValue.data;
+                    action.data = data;
+                    action.key = arrayDataGetterValue.key;
+                    action.index = arrayDataGetterValue.index;
+                }
+                if (hasNoValue(reducer)) {
+                    bubbleChildAction(action);
+                }
+                else {
+                    updateData((oldData) => reducer(oldData, action));
                 }
             });
         });
@@ -330,8 +258,8 @@
      * @param dataState : state value of the object.
      * @param assetGetter : callback to get the asset of the context element.
      */
-    const updateWatchAttribute = (element, stateAttributeProperty, data, dataState, assetGetter) => {
-        const attributeProps = stateAttributeProperty.get(dataState) || stateAttributeProperty.get(STATE_GLOBAL);
+    const updateWatchAttribute = (element, stateAttributeProperty, data, assetGetter) => {
+        const attributeProps = stateAttributeProperty;
         if (hasNoValue(attributeProps)) {
             return;
         }
@@ -348,44 +276,6 @@
             setPropertyValue(attribute, element, val, data, watchProperty);
         });
     };
-    /**
-     * UpdateToggleAttribute is a method that will toggle the value of attribute based on the data.state. It will iterate over
-     * attributeStateProperty. If the current data.state is available in the attributeStateProperty, then the value of the attribute
-     * will be appended against the default attribute value.
-     *
-     * @param element : node or also an HTMLElement
-     * @param attributeStateProperty : object that store the mapping of property against attribute and state.
-     * @param dataState : state value of the object.
-     * @param defaultAttributeValue : default value of the active-attribute toggle.
-     */
-    const updateToggleAttribute = (element, attributeStateProperty, dataState, defaultAttributeValue) => {
-        attributeStateProperty.forEach((stateProperty, attribute) => {
-            const attributeValue = [];
-            const defaultValue = defaultAttributeValue.get(attribute);
-            const propertyValue = stateProperty.get(dataState);
-            if (hasValue(defaultValue)) {
-                attributeValue.push(defaultValue);
-            }
-            if (hasValue(propertyValue)) {
-                attributeValue.push(propertyValue);
-            }
-            const newAttributeValue = attributeValue.join(' ');
-            if (element.getAttribute(attribute) !== newAttributeValue) {
-                element.setAttribute(attribute, newAttributeValue);
-            }
-        });
-    };
-    /**
-     * PopulateDefaultAttributeValue will iterate over all element attributeNames, and return them in the form of Map.
-     * @param element : active node or the HTMLElement
-     */
-    function populateDefaultAttributeValue(element) {
-        const attributeValue = new Map();
-        element.getAttributeNames().forEach(attributeName => {
-            attributeValue.set(attributeName, element.getAttribute(attributeName));
-        });
-        return attributeValue;
-    }
     /**
      * Function to extract the value of json from jsonPath
      * @param data
@@ -457,7 +347,7 @@
             };
             this.nodes = nodes;
             this.addChildActionEventListener(updateDataFromChild);
-            const activeAttributes = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_TOGGLE_ATTRIBUTE, DATA_ASSET_ATTRIBUTE];
+            const activeAttributes = [DATA_WATCH_ATTRIBUTE, DATA_ACTION_ATTRIBUTE, DATA_ASSET_ATTRIBUTE];
             const activeNodes = Array.from(activeNodesLookup(activeAttributes, nodes));
             const dataGetter = () => this.dataGetter();
             this.attributeEvaluators = activeNodes.map(activeNode => new AttributeEvaluator(activeNode, assetGetter, dataGetter, updateData, reducerGetter, activeAttributes, bubbleChildAction));
@@ -769,6 +659,11 @@
             this.superContextElement = null;
         }
     }
+
+    /**
+     * Error message to show when data.key is missing in context-array
+     */
+    const arrayContextElementMissingDataKey = () => `'<context-array>' requires 'data.key' attribute. data-key value should refer to the unique attribute of the data.`;
 
     /**
      * ArrayContextElement is ContextElement which can render array instead of javascript object.
