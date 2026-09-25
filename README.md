@@ -1,18 +1,18 @@
-# _context-element_
+# context-element
 
-[![Build Status](https://travis-ci.org/marsa-emreef/context-element.svg?branch=master)](https://travis-ci.org/marsa-emreef/context-element)
 ![gzip size](http://img.badgesize.io/https://unpkg.com/context-element/index.min.js?compression=gzip&label=MinJS%20gzip%20size)
-[![codecov](https://codecov.io/gh/marsa-emreef/context-element/branch/master/graph/badge.svg)](https://codecov.io/gh/marsa-emreef/context-element)
-![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/marsa-emreef/context-element/master)
+[![codecov](https://codecov.io/gh/arif-rachim/context-element/branch/master/graph/badge.svg)](https://codecov.io/gh/arif-rachim/context-element)
+![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/arif-rachim/context-element/master)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
-![GitHub](https://img.shields.io/github/license/marsa-emreef/context-element)
+![GitHub](https://img.shields.io/github/license/arif-rachim/context-element)
 
+**_`context-element`_** is a small, dependency-free Web Component library that renders JavaScript objects and arrays into an HTML page using plain HTML as the template. It exists for pages that need data binding but where a full UI framework, a build toolchain, or a template language with its own syntax would be too heavy. You place a `<context-element>` (for one object) or a `<context-array>` (for a list) in the page, write ordinary markup inside it, and mark the parts that should change with "active attributes" such as `watch="name"`, `value.watch="city"` or `click.action="SAVE"`. When you assign a new value to the element's `data` property, it updates only the bound attributes and text, without a virtual DOM; `<context-array>` uses a `data.key` property to reuse, add and remove item nodes. User events become `{type, event}` action objects passed to a reducer that returns the next data, which gives a one-way data flow. It is written in TypeScript, bundled with Rollup into a single script that can be loaded from unpkg or installed from npm (latest `1.4.7`), tested with Jest, and demonstrated with Storybook stories. Development took place in mid-2020 and the project is no longer active.
 
-**_`context-element`_** is an HTMLElement that makes it easy to render data or array in html page.
+> Status: published on npm, last code change July 2020. Not actively maintained.
 
-**_`context-element`_** is a very small ![gzip size](http://img.badgesize.io/https://unpkg.com/context-element/index.min.js?compression=gzip&label=MinJS%20gzip%20size). It can render an array of data efficiently and quickly. You can directly use **_`context-element`_** on the html page by supplying `arrays or object` to the attribute `data` into the **_`context-element`_** element. You can determine how the data will be displayed by creating a template inside the **_`context-element`_**.
+**Live demo (Storybook):** https://www.rach.im/context-element/
 
-### installation
+## Installation
 
 From CDN
 ```html
@@ -20,16 +20,18 @@ From CDN
 ```
 
 npm module
-```
+```bash
 npm install context-element
 ```
 
+Loading the script registers the two custom elements `context-element` and `context-array`.
+
 ## Why context-element
-1. Because context-elements are native HTMLElement.
-2. Because famous UI Framework cuts your bandwidth budget.
-3. Because it doesn't use virtual dom, memory usage is very efficient.
-4. Because the syntax is very simple, and the same source-code can be used by UX designer tools.
-5. Because it has been proven by using reducer, it is easier to monitor app behaviour by using one-way data flow.
+1. context-elements are native `HTMLElement`s (custom elements), so no framework runtime is needed.
+2. Popular UI frameworks take a large share of a page's bandwidth budget.
+3. It does not use a virtual DOM, which keeps memory usage low.
+4. The template syntax is plain HTML attributes, so the same markup can be used by UX design tools.
+5. State changes go through a reducer, so app behaviour is easy to follow with one-way data flow.
 
 ## Motivation
 Currently to be able to render objects or arrays on html pages we can use the template engine, or UI framework.
@@ -60,7 +62,7 @@ WebComponent aims to enable us to create new elements that are recognized by the
                 el.data = {
                     time : new Date().toLocaleTimeString()
                 }
-            });
+            }, 1000);
         </script>
     </body>
 </html>
@@ -98,13 +100,16 @@ To bind the attribute or innerHTML of the template, we can use the `watch` attri
 </context-element>
 ```
 
+The value of a `watch` attribute is evaluated as a property path on the data, so nested properties such as `address.city` also work. Evaluation uses `new Function`, so pages with a strict Content Security Policy must allow `unsafe-eval`.
+
 ### Active-Attribute
 Context-element templates are html code that has special attributes that we refer to as active-attributes. Active-attribute is an html attribute that has a specific keyword or what we call an active-attribute type (AAT), and each AAT works differently.
-At the moment there are 4 AATs supported by context elements:
+At the moment there are 3 AATs supported by context elements:
 1. Watch
-2. Assets
-3. Toggle
-4. Action
+2. Asset
+3. Action
+
+(A fourth type, `toggle`, together with state-based bindings through `data._state`, was removed in July 2020.)
 
 ### watch
 Watch, is an Active Attribute Type (AAT) that is used to bind property data, with html elements
@@ -191,6 +196,7 @@ context-array has 4 values:
 2. Action.event: is a dom event that triggers action.
 3. Action.data: is a data item from an array.
 4. Action.index: is an index of data items against an array.
+5. Action.key: is the key value of the data item (from `data.key`).
 
 Following is an example of how we can use actions in `context-array`
 
@@ -205,8 +211,8 @@ Following is an example of how we can use actions in `context-array`
 <script>
     const el = document.getElementById('my-element');
     el.data = [
-        { dataId : 1, isChecked:false},
-        { dataId : 2, isChecked:false},
+        { id : 1, isChecked:false},
+        { id : 2, isChecked:false},
     ];
     el.reducer = (array,action) => {
         const {type,event,data,index} = action;
@@ -225,42 +231,6 @@ With the above code we can see that the `SET_CHECKBOX` action will set the value
 the new one from `checkbox.checked` property.
 
 
-### toggle
-Toogle is an active-attribute that is used to toggle the value of the attribute. To use the toggle attribute
-we must use the `state` of the context. Consider the following example how toggle used :
-
-```html
-<context-element>
-    <input type="text" class="text-style" class.highlight.toggle="text-highlight" mouseenter.action="SET_HIGHLIGHT" mouseleave.action="HIDE_HIGHLIGHT">
-</context-element>
-<script>
-    const el = document.getElementsByTagName('context-element');
-    el.reducer = (data,action) => {
-        switch(action.type){
-            case 'SET_HIGHTLIGHT' : {
-                const newData = {...data};
-                // here we set the _state to highlight.
-                newData._state = 'highlight';
-                return newData;
-            }
-            case 'HIDE_HIGHTLIGHT' : {
-                const newData = {...data};
-                delete newData._state;
-                return newData;
-            }
-        }       
-        return {...data}
-    }
-</script>
-```
-The code above means, if the value of **`data._state`** is` highlight` then the context-element will render the template above to
-
-```html
-<context-element>
-    <input type="text" class="text-style text-highlight" >
-</context-element>
-```
- 
 ### asset
 Assets are active attributes that will bound values from attributes not from data, but from context-element `asset` property.
 Following is an example of using Assets.
@@ -270,7 +240,7 @@ Following is an example of using Assets.
     <input type="text" placeholder.asset="placeHolderText">
 </context-element>
 <script>
-    const el = document.getElementsByTagName('context-element');
+    const el = document.querySelector('context-element');
     el.assets = {
         placeHolderText : 'Please type your input here ?'
     }
@@ -280,21 +250,75 @@ Inside the script tag in the sample code above, we assign the value of `assets` 
 `Please type your input here?`.
 
 
-In contrast to `data`, if we assign the value of an `asset`, the context-element will not rerendered its content.
+In contrast to `data`, assigning `assets` does not re-render the content of the context-element.
 
 Apart from that, if the context-element cannot find the key of the asset that we are looking for, then the context-element will look to the parent assets.
 
 #### active-attributes semantic
 semantic | meaning
---- | --- | 
-```<div watch="name">``` | Bind the data name property into the div content. This is the same as ```<div content.watch="name">``` 
-```<div content.simple.watch="firstName" content.detail.watch="fullName"></div>``` | If `data._state` value is `simple`: then bind content div with the property `data.firstName`, if `data._state` value is `detail` : then bind content div with the property` data.fullName`.
-```<input value.watch="name">``` | Bind the `data.name` property into the input value.
-```<input value.people.watch="name" value.address.watch="city">``` | If `data._state` value is `people`: then bind the element attribute `input.value` with` data.name`. If `data._state` value is `address`: then bind the element attribute `input.value` with` data.city`
-```<div class="default" class.disabled.toggle="disabled">Cloud Strife</div>``` | If `data._state` has no value, the value of the class attribute is` <div class = "default"> Cloud Strife </div> `, If` data._state` has a value of `disabled` then the value of the class is` < div class = "default disabled"> Cloud Strife </div> `
+--- | ---
+`<div watch="name">` | Bind the `data.name` property into the div content. This is the same as `<div content.watch="name">`
+`<input value.watch="name">` | Bind the `data.name` property into the input value.
+`<div watch="address.city">` | Bind a nested property, `data.address.city`.
+`<input placeholder.asset="placeHolderText">` | Bind the placeholder to `assets.placeHolderText`, looking up parent context-elements if the key is missing.
+`<button click.action="SAVE">` | Send `{type: 'SAVE', event}` to the reducer when the button is clicked (`onclick.action` also works).
 
+## Nested context-elements
 
+A context-element inside another one can receive part of the parent's data declaratively with `data.watch`, and its reducer with `reducer.watch`. When the child updates its data, the change is written back into the parent's data at that path. If a child has no reducer, its actions bubble up to the nearest parent context-element that has one, as a `ChildAction` with a `childActions` list describing the path (and, for arrays, the `key`, `index` and `data` of the item).
 
-##### Examples & Github Page
-head over our [ContextElement page](https://marsa-emreef.github.io/context-element/)  to see more context elements in action
+```html
+<context-element id="myelement">
+    <div watch="name"></div>
+    <context-element data.watch="address" reducer.watch="addressReducer">
+        <div watch="city"></div>
+        <input type="text" input.action="SET_CITY">
+    </context-element>
+</context-element>
+<script>
+    const el = document.getElementById('myelement');
+    el.data = {
+        name : 'Example of how to change the node',
+        address : { city : 'You can change this value' },
+        addressReducer : (address, action) => {
+            if (action.type === 'SET_CITY') {
+                return {...address, city : action.event.target.value};
+            }
+            return {...address};
+        }
+    };
+</script>
+```
+
+## Development
+
+```bash
+npm install
+npm test                  # Jest with coverage
+npm run build             # Rollup: src/index.ts -> index.js and index.min.js
+npm run storybook         # Storybook dev server with the stories in src/stories
+npm run build-storybook   # build the Storybook site into docs/ (served by GitHub Pages)
+npm run todo              # run the todo example with Parcel
+npm run commit            # Commitizen conventional commit prompt
+```
+
+Releases are published by semantic-release from `master`. See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+
+## Project structure
+
+```text
+src/context-element.ts         ContextElement (<context-element>)
+src/array-context-element.ts   ArrayContextElement (<context-array>)
+src/libs/                      attribute evaluator, validator, data renderer, error messages
+src/stories/                   Storybook stories (built into docs/)
+example/                       standalone HTML examples (watch, action, array, nested, todo, color palette)
+index.js, index.min.js         built bundles published to npm
+```
+
+## Examples & GitHub Page
+Head over to the [ContextElement Storybook page](https://www.rach.im/context-element/) to see more context elements in action, or open the files in [`example/`](example/).
+
+## License
+
+MIT. See [LICENSE.txt](LICENSE.txt).
 
